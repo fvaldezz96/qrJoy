@@ -1,0 +1,80 @@
+# === Node / Expo / TypeScript ===
+
+# node_modules y lockfiles
+node_modules/
+**/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# compilados / builds
+dist/
+build/
+.cache/
+.expo/
+.expo-shared/
+.expo/*
+.expo-shared/*
+web-build/
+android/
+ios/
+*.apk
+*.aab
+*.ipa
+
+# logs y temporales
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+expo-error.log
+*.log
+*.tmp
+*.temp
+*.bak
+
+# TS
+*.tsbuildinfo
+
+# entornos
+.env
+.env.*
+!.env.example
+
+# sistema
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# coverage y tests
+coverage/
+jest-html-reporters-*
+reports/
+test-results/
+*.lcov
+
+# archivos de sistema o cache de git
+.gitignore~
+*.orig
+
+# backups
+*.zip
+*.tar
+*.gz
+
+# misc
+# Imágenes o videos de prueba locales
+/tmp/
+*.mp4
+*.mov
+*.webm
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Monorepo cache
+apps/**/node_modules/
+packages/**/node_modules/

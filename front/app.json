@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "JoyPark",
+    "slug": "joypark",
+    "scheme": "joypark",
+    "version": "1.0.0",
+    "sdkVersion": "51.0.0",
+    "platforms": ["ios", "android", "web"],
+    "orientation": "portrait",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}
