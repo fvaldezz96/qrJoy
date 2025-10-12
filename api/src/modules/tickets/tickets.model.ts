@@ -5,6 +5,8 @@ export interface ITicket {
   qrId?: Types.ObjectId;
   userId: Types.ObjectId;
   orderId: Types.ObjectId;
+  name: string;
+  email: string;
   qrCode: string;
   redeemed: boolean;
   status: 'issued' | 'paid' | 'redeemed';

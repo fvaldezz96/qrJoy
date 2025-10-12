@@ -4,9 +4,11 @@ import QRCode from 'qrcode';
 
 import { Order } from '../orders/order.model';
 import { Ticket } from '../tickets/tickets.model';
+import { EntranceTicket } from './entranceTickets.model';
 import { QR } from './qr.model';
 
-export type QRKind = 'order' | 'ticket';
+// ACTUALIZAR: Incluir 'entrance' en QRKind
+export type QRKind = 'order' | 'ticket' | 'entrance';
 
 const ttlMinutes = Number(process.env.QR_TTL_MINUTES || 240);
 const secret = process.env.APP_SECRET || 'fallback-secret-for-development';
@@ -27,7 +29,6 @@ export async function issueQR(
 
   const code = Math.random().toString(36).slice(2, 14);
   const signature = hmac(code);
-  // console.log('ISSUING QR', { kind, refId, code, signature });
 
   const expiresAt = ttlMinutes ? new Date(Date.now() + ttlMinutes * 60 * 1000) : undefined;
   const qr = await QR.create(
@@ -61,6 +62,19 @@ export async function redeem(code: string, signature: string, staffId: Types.Obj
 
   if (qr.kind === 'ticket') {
     await Ticket.updateOne({ _id: qr.refId }, { $set: { status: 'redeemed' } });
+  }
+
+  // NUEVO: Manejar entradas
+  if (qr.kind === 'entrance') {
+    const entranceTicket = await EntranceTicket.findOne({ qrId: qr._id });
+    if (entranceTicket && entranceTicket.status === 'active') {
+      entranceTicket.status = 'used';
+      entranceTicket.usedAt = new Date();
+      entranceTicket.usedBy = staffId;
+      await entranceTicket.save();
+    } else {
+      throw new Error('TICKET_ALREADY_USED_OR_INVALID');
+    }
   }
 
   return qr;

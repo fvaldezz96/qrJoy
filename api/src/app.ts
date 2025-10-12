@@ -9,9 +9,11 @@ import productRoutes from './modules/products/product.routes';
 import qrRoutes from './modules/qr/qr.routes';
 import comandaRoutes from './modules/tables/comanda.routes';
 import tableRoutes from './modules/tables/table.route';
+import entraceTickets from './modules/tickets/entranceTickets.routes';
+import scannQr from './modules/tickets/scan.routes';
 import ticketRoutes from './modules/tickets/ticket.routes';
-// import userAuthRoutes from './modules/users/user.routes';
 import usersRoutes from './modules/users/user.routes';
+// import userAuthRoutes from './modules/users/user.routes';
 
 export const app = express();
 
@@ -29,7 +31,9 @@ app.use('/qr', qrRoutes);
 app.use('/tables', tableRoutes);
 app.use('/comandas', comandaRoutes);
 app.use('/auth', authRoutes);
-// error handler
+app.use('/entrance-tickets', entraceTickets);
+app.use('/scan', scannQr);
+
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error(err);
   res.status(err.status || 500).json({

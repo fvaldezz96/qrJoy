@@ -1,7 +1,8 @@
 import { model, Schema, Types } from 'mongoose';
 
 export type QRState = 'active' | 'redeemed' | 'expired';
-export type QRKind = 'order' | 'ticket';
+export type QRKind = 'order' | 'ticket' | 'entrance';
+export type TicketType = 'joypark' | 'joyweek' | 'joybox';
 
 export interface IQR {
   _id: Types.ObjectId;
@@ -14,11 +15,13 @@ export interface IQR {
   expiresAt?: Date;
   redeemedAt?: Date;
   redeemedBy?: Types.ObjectId;
+  ticketType?: TicketType;
+  metadata?: any;
 }
 
 const QRSchema = new Schema<IQR>(
   {
-    kind: { type: String, enum: ['order', 'ticket'], required: true },
+    kind: { type: String, enum: ['order', 'ticket', 'entrance'], required: true },
     refId: { type: Schema.Types.ObjectId, required: true },
     code: { type: String, required: true, unique: true },
     signature: { type: String, required: true },
