@@ -10,6 +10,15 @@ export interface ITicket {
   status: 'issued' | 'paid' | 'redeemed';
   redeemedAt?: Date;
   createdAt: Date;
+  tableNumber: number;
+  total?: number;
+  items?: Array<{
+    productId: Types.ObjectId;
+    name: string;
+    qty: number;
+    price: number;
+    subtotal: number;
+  }>;
 }
 
 const TicketSchema = new Schema<ITicket>(
@@ -21,6 +30,7 @@ const TicketSchema = new Schema<ITicket>(
     redeemed: { type: Boolean, default: false },
     redeemedAt: { type: Date },
     status: { type: String, enum: ['issued', 'paid', 'redeemed'], required: true },
+    tableNumber: { type: Number, required: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

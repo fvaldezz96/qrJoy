@@ -12,7 +12,7 @@ export interface IOrderItem {
 
 export interface IOrder extends Document {
   _id: string | mongoose.Types.ObjectId;
-  userId?: Types.ObjectId;
+  userId?: Types.ObjectId | string;
   tableId?: Types.ObjectId;
   type: OrderType;
   items: IOrderItem[];
