@@ -1,13 +1,20 @@
-import express from 'express';
+import http from 'http';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+import { app } from './app';
+import { connectMongo } from './config/db';
+import { env } from './config/env';
 
-app.get('/', (req, res) => {
-  res.json({ message: 'JoyPark API is running!' });
-});
+async function bootstrap() {
+  await connectMongo();
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  const server = http.createServer(app);
+  server.listen(env.PORT, () => {
+    console.log(`🚀 Server is running on port ${env.PORT}`);
+    console.log(`📊 Environment: ${env.NODE_ENV}`);
+  });
+}
+
+bootstrap().catch(err => {
+  console.error('❌ Falla en bootstrap:', err);
+  process.exit(1);
 });
