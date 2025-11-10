@@ -57,7 +57,11 @@ export const createOrder = createAsyncThunk(
 
     // console.log('Creating order with:', { items, tableId, type });
 
-    const { data } = await axios.post('http://192.168.0.12:3000/orders', { items, tableId, type });
+    const { data } = await axios.post('https://qrjoy-api-production.up.railway.app/orders', {
+      items,
+      tableId,
+      type,
+    });
 
     return data.data._id as string;
   },
@@ -72,7 +76,7 @@ export const payMockOrder = createAsyncThunk('orders/payMock', async (orderId: s
 // Obtener todas las órdenes
 export const getAllOrders = createAsyncThunk('orders/getAll', async () => {
   try {
-    const { data } = await axios.get('http://192.168.0.12:3000/orders');
+    const { data } = await axios.get('https://qrjoy-api-production.up.railway.app/orders');
 
     const orders = data.data.orders;
     const total = data.data.total;

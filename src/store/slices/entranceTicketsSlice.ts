@@ -74,12 +74,15 @@ export const fetchUserTickets = createAsyncThunk<
       return Object.values(state.entranceTickets.entities) as EntranceTicket[];
     }
 
-    const { data } = await axios.get(`http://192.168.0.12:3000/entrance-tickets/my-tickets`, {
-      headers: {
-        'x-user-id': userId,
-        // 'x-user-role': role, // opcional
+    const { data } = await axios.get(
+      `https://qrjoy-api-production.up.railway.app/entrance-tickets/my-tickets`,
+      {
+        headers: {
+          'x-user-id': userId,
+          // 'x-user-role': role, // opcional
+        },
       },
-    });
+    );
 
     return data.data.tickets as EntranceTicket[];
   },
@@ -97,10 +100,11 @@ export const purchaseTickets = createAsyncThunk<
   { ticketType: TicketType; quantity: number; userId: string }
 >('entranceTickets/purchase', async ({ ticketType, quantity, userId }) => {
   const { data } = await axios.post(
-    `http://192.168.0.12:3000/entrance-tickets/purchase`,
+    `https://qrjoy-api-production.up.railway.app/entrance-tickets/purchase`,
     { ticketType, quantity },
     {
       headers: { 'x-user-id': userId },
+      ipcipc,
     },
   );
   return data.data.purchase as PurchaseResponse;

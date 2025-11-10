@@ -1,0 +1,96 @@
+# =========================
+# EXPO & REACT NATIVE
+# =========================
+.expo/
+.expo-shared/
+.expo-shared/
+.expo/devices.json
+.expo/settings.json
+
+# =========================
+# NODE & DEPENDENCIAS
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# BUILD & CACHE
+# =========================
+dist/
+build/
+.out/
+*.tsbuildinfo
+.cache/
+.tmp/
+.temp/
+
+# =========================
+# METRO & BUNDLER
+# =========================
+.metro-health-check*
+metro-cache/
+metro-bundler-cache-*
+
+# =========================
+# EAS & EXPO BUILD
+# =========================
+.eas/
+android/
+ios/
+web-build/
+app-build/
+*.apk
+*.aab
+*.ipa
+*.xcworkspace
+*.xcodeproj
+
+# =========================
+# ENV & SECRETOS
+# =========================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+*.pem
+*.key
+*.crt
+
+# =========================
+# IDE & EDITOR
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =========================
+# LOGS
+# =========================
+logs/
+*.log
+
+# =========================
+# TEST & COVERAGE
+# =========================
+coverage/
+.nyc_output/
+.jest/
+test-results/
+
+# =========================
+# MISC
+# =========================
+*.bak
+*.tmp
+*.cache
+.eslintcache
+.prettiercache

@@ -66,7 +66,7 @@ export const fetchProducts = createAsyncThunk<
     }
 
     // TRAE TODO
-    const { data } = await axios.get('http://192.168.0.12:3000/products');
+    const { data } = await axios.get('https://qrjoy-api-production.up.railway.app/products');
     return data.data.items as Product[];
   },
   {

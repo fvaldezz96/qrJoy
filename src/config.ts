@@ -1,5 +1,6 @@
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || 'http://192.168.0.12:3000';
+  process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ||
+  'https://qrjoy-api-production.up.railway.app';
 
 export const APP_NAME = 'JoyPark';
 export const APP_VERSION = '1.0.0';
