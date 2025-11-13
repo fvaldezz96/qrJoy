@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs access to the camera",
+          "microphonePermission": "This app needs access to the microphone"
+        }
+      ]
+    ],
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.joyparkmobile"
+    }
+  }
+}

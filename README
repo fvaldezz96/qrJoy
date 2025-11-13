@@ -1,0 +1,146 @@
+Fondo principal: #0F0E17 (negro con toque azul noche)
+
+Secundario: #1A1A2E (contraste suave para cards)
+
+Color primario: #E53170 (magenta neón)
+
+Color acento: #FAD02C (amarillo cálido veraniego)
+
+Texto: #F5F5F5
+
+Iconos: neón o blanco
+
+Sombras suaves y difusas para sensación de profundidad.
+
+# 🎨 JoyPark Frontend (Expo + React Native)
+
+Aplicación móvil del sistema JoyPark: plataforma para **pedidos, tickets, control de acceso y panel administrativo** para eventos, boliches y gastronomía.
+
+---
+
+## 🚀 Tecnologías Principales
+
+- **Expo SDK 54 (React Native)**
+- **Expo Router**
+- **Redux Toolkit + AsyncThunk**
+- **Axios**
+- **React Native QRCode SVG**
+- **React Native Vector Icons**
+- **TypeScript**
+
+---
+
+## ⚙️ Scripts Disponibles
+
+```bash
+# Instalar dependencias
+npm install
+
+# Correr en desarrollo
+npx expo start
+
+# Limpiar caché
+npx expo start -c
+```
+
+🧩 Estructura
+app/
+├── (user)/
+│ ├── home.tsx
+│ ├── products.tsx
+│ ├── my-tickets.tsx
+│ └── my-qr.tsx
+├── (admin)/
+│ ├── dashboard.tsx
+│ ├── orders-screen.tsx
+│ └── qr-scanner.tsx
+src/
+├── store/
+│ ├── slices/
+│ ├── index.ts
+│ └── hook.ts
+├── api/
+│ └── client.ts
+├── components/
+│ └── ui/
+
+🧠 Funcionalidades
+
+📦 Compra y gestión de productos
+
+🎟️ Tickets y QR personalizados
+
+📲 Escáner QR para validación
+
+💰 Dashboard admin con métricas
+
+🔄 Redux persistente para estados globales
+
+⚙️ Variables de Entorno (.env)
+EXPO_PUBLIC_API_BASE_URL=https://qrjoy-api-production.up.railway.app
+
+📱 Interfaz
+
+Tema oscuro profesional con neones (inspirado en eventos nocturnos)
+
+Diseño intuitivo, fresco y rápido
+
+Fluidez entre áreas de usuario y admin
+
+🧾 Estructura Redux
+
+Slices principales:
+
+ordersSlice → Pedidos y QR
+
+ticketsSlice → Entradas
+
+productsSlice → Productos
+
+adminSlice → Métricas y comandas
+
+authSlice → Sesión de usuario
+
+🔧 Próximos pasos
+
+Autenticación con JWT
+
+Push notifications
+
+Integración con escáner físico
+
+Animaciones de entrada con Reanimated
+
+---
+
+### 📦 package.json (frontend)
+
+```json
+{
+  "name": "joypark-front",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "expo": "^54.0.22",
+    "expo-camera": "~17.0.9",
+    "expo-constants": "~18.0.10",
+    "expo-router": "^3.5.23",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.1",
+    "react-native-qrcode-svg": "^6.3.0",
+    "react-native-svg": "^15.3.0",
+    "react-redux": "^9.1.2",
+    "@reduxjs/toolkit": "^2.2.5",
+    "@expo/vector-icons": "^14.0.0"
+  }
+}
+```
