@@ -1,181 +1,19 @@
-<<<<<<< HEAD
-# === Node / Expo / TypeScript ===
-
-# node_modules y lockfiles
-node_modules/
-**/node_modules/
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# compilados / builds
+# === EXPO ===
+.expo/
+.expo-shared/
 dist/
-build/
-.cache/
-.expo/
-.expo-shared/
-.expo/*
-.expo-shared/*
 web-build/
-android/
-ios/
-*.apk
-*.aab
-*.ipa
 
-# logs y temporales
-=======
-# =========================
-# EXPO & REACT NATIVE
-# =========================
-.expo/
-.expo-shared/
-.expo-shared/
-.expo/devices.json
-.expo/settings.json
-
-# =========================
-# NODE & DEPENDENCIAS
-# =========================
+# === NODE ===
 node_modules/
->>>>>>> 97503de76b7316756bd22edbf005e6deec43e21c
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-<<<<<<< HEAD
-expo-error.log
-*.log
-*.tmp
-*.temp
-*.bak
-
-# TS
-*.tsbuildinfo
-
-# entornos
-.env
-.env.*
-!.env.example
-
-# sistema
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.swp
-
-# coverage y tests
-coverage/
-jest-html-reporters-*
-reports/
-test-results/
-*.lcov
-
-# archivos de sistema o cache de git
-.gitignore~
-*.orig
-
-# backups
-*.zip
-*.tar
-*.gz
-
-# misc
-# Imágenes o videos de prueba locales
-/tmp/
-*.mp4
-*.mov
-*.webm
-*.png
-*.jpg
-*.jpeg
-*.gif
-
-# Monorepo cache
-apps/**/node_modules/
-packages/**/node_modules/
-=======
-
-# =========================
-# BUILD & CACHE
-# =========================
-dist/
-build/
-.out/
-*.tsbuildinfo
-.cache/
-.tmp/
-.temp/
-
-# =========================
-# METRO & BUNDLER
-# =========================
-.metro-health-check*
-metro-cache/
-metro-bundler-cache-*
-
-# =========================
-# EAS & EXPO BUILD
-# =========================
-.eas/
-android/
-ios/
-web-build/
-app-build/
-*.apk
-*.aab
-*.ipa
-*.xcworkspace
-*.xcodeproj
-
-# =========================
-# ENV & SECRETOS
-# =========================
 .env
 .env.local
-.env.*.local
-.env.development
-.env.production
-.env.test
-*.pem
-*.key
-*.crt
 
-# =========================
-# IDE & EDITOR
-# =========================
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# === OS ===
 .DS_Store
 Thumbs.db
 
-# =========================
-# LOGS
-# =========================
-logs/
-*.log
-
-# =========================
-# TEST & COVERAGE
-# =========================
-coverage/
-.nyc_output/
-.jest/
-test-results/
-
-# =========================
-# MISC
-# =========================
-*.bak
-*.tmp
-*.cache
-.eslintcache
-.prettiercache
->>>>>>> 97503de76b7316756bd22edbf005e6deec43e21c
-.expo/
-.expo-shared/
-dist/
+# === ANDROID / IOS ( solo si usás EAS) ===
+android/
+ios/
