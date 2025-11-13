@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs access to the camera",
+          "microphonePermission": "This app needs access to the microphone"
+        }
+      ]
+    ]
+  }
+}

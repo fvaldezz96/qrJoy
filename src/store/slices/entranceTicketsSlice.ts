@@ -1,0 +1,170 @@
+import { createAsyncThunk, createEntityAdapter, createSlice } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+import { RootState } from '../index';
+
+// === TIPOS ===
+export type TicketType = 'joypark' | 'joyweek' | 'joybox';
+
+export interface EntranceTicket {
+  _id: string;
+  userId: string;
+  type: TicketType;
+  price: number;
+  qrId: {
+    _id: string;
+    code: string;
+    state: 'active' | 'used' | 'expired';
+  };
+  validUntil: string;
+  purchaseDate?: string;
+  metadata?: {
+    name: string;
+    durationHours: number;
+  };
+}
+
+export type PurchaseResponse = {
+  totalPrice: number;
+  quantity: number;
+  tickets: {
+    ticketId: string;
+    type: TicketType;
+    price: number;
+    qrImage: string;
+    qrCode: string;
+    validUntil: string;
+  }[];
+};
+
+// === ADAPTER ===
+const ticketsAdapter = createEntityAdapter<EntranceTicket>({
+  selectId: (t) => t._id,
+  sortComparer: (a, b) => new Date(b.validUntil).getTime() - new Date(a.validUntil).getTime(),
+});
+
+interface TicketsState {
+  loading: boolean;
+  error: string | null;
+  lastFetched: number;
+}
+
+const initialState = ticketsAdapter.getInitialState<TicketsState>({
+  loading: false,
+  error: null,
+  lastFetched: 0,
+});
+
+// === THUNKS ===
+
+/** TRAE LAS ENTRADAS DEL USUARIO */
+export const fetchUserTickets = createAsyncThunk<
+  EntranceTicket[],
+  { userId: string; role?: string },
+  { state: RootState }
+>(
+  'entranceTickets/fetchUserTickets',
+  async ({ userId }, { getState }) => {
+    const state = getState();
+    const hasData = Object.keys(state.entranceTickets.entities).length > 0;
+    const now = Date.now();
+    const isFresh = now - state.entranceTickets.lastFetched < 30_000; // 30 seg
+
+    if (hasData && isFresh) {
+      return Object.values(state.entranceTickets.entities) as EntranceTicket[];
+    }
+
+    const { data } = await axios.get(
+      `https://qrjoy-api-production.up.railway.app/entrance-tickets/my-tickets`,
+      {
+        headers: {
+          'x-user-id': userId,
+          // 'x-user-role': role, // opcional
+        },
+      },
+    );
+
+    return data.data.tickets as EntranceTicket[];
+  },
+  {
+    condition: ({ userId }, { getState }) => {
+      const { loading } = getState().entranceTickets;
+      return !!userId && !loading;
+    },
+  },
+);
+
+/** COMPRA ENTRADAS */
+export const purchaseTickets = createAsyncThunk<
+  PurchaseResponse,
+  { ticketType: TicketType; quantity: number; userId: string }
+>('entranceTickets/purchase', async ({ ticketType, quantity, userId }) => {
+  const { data } = await axios.post(
+    `https://qrjoy-api-production.up.railway.app/entrance-tickets/purchase`,
+    { ticketType, quantity },
+    {
+      headers: { 'x-user-id': userId },
+      ipcipc,
+    },
+  );
+  return data.data.purchase as PurchaseResponse;
+});
+
+// === SLICE ===
+const entranceTicketsSlice = createSlice({
+  name: 'entranceTickets',
+  initialState,
+  reducers: {
+    clearTicketsError: (state) => {
+      state.error = null;
+    },
+    clearTicketsCache: (state) => {
+      ticketsAdapter.removeAll(state);
+      state.lastFetched = 0;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // FETCH
+      .addCase(fetchUserTickets.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserTickets.fulfilled, (state, action) => {
+        state.loading = false;
+        state.lastFetched = Date.now();
+        ticketsAdapter.setAll(state, action.payload);
+      })
+      .addCase(fetchUserTickets.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Error al cargar entradas';
+      })
+
+      // PURCHASE
+      .addCase(purchaseTickets.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(purchaseTickets.fulfilled, (state) => {
+        // Opcional: recargar tickets después de compra
+        state.lastFetched = 0;
+      })
+      .addCase(purchaseTickets.rejected, (state, action) => {
+        state.error = action.error.message || 'Error al comprar';
+      });
+  },
+});
+
+// === ACCIONES ===
+export const { clearTicketsError, clearTicketsCache } = entranceTicketsSlice.actions;
+
+// === SELECTORS ===
+export const ticketsSelectors = ticketsAdapter.getSelectors<RootState>(
+  (state) => state.entranceTickets,
+);
+
+export const selectAllTickets = ticketsSelectors.selectAll;
+export const selectTicketById = ticketsSelectors.selectById;
+export const selectTicketsLoading = (state: RootState) => state.entranceTickets.loading;
+export const selectTicketsError = (state: RootState) => state.entranceTickets.error;
+
+export default entranceTicketsSlice.reducer;
