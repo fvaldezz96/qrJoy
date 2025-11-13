@@ -1,4 +1,9 @@
 {
-  "build": { "builder": "paketo", "buildCommand": "npm run build" },
-  "start": { "command": "expo start --web" }
+  "build": {
+    "builder": "railpack",
+    "buildCommand": "npm run build"
+  },
+  "start": {
+    "command": "npx expo start --web"
+  }
 }

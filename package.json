@@ -5,13 +5,13 @@
   "main": "expo-router/entry",
   "type": "module",
   "scripts": {
-    "start": "expo start",
+    "start": "serve dist -s --listen 3000",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "npx expo lint",
     "lint:fix": "npx expo lint --fix",
-    "build": "tsc && expo export --platform web"
+    "build": "expo export --platform web --no-minify"
   },
   "expo": {
     "install": {
@@ -62,6 +62,7 @@
     "react-native-worklets": "0.5.1",
     "react-redux": "^9.1.2",
     "redux-persist": "^6.0.0",
+    "serve": "^14.2.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
