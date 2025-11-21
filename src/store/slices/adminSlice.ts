@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
 
-import { API_BASE_URL } from '../../config';
+import api from '../../api/client';
 
 export interface AdminMetrics {
   orders: {
@@ -27,7 +26,7 @@ export interface AdminMetrics {
 }
 
 export const fetchMetrics = createAsyncThunk('admin/fetchMetrics', async () => {
-  const { data } = await axios.get(`${API_BASE_URL}/admin/metrics`);
+  const { data } = await api.get('/admin/metrics');
   // console.log('Fetched admin metrics:', data);
   return data.data as AdminMetrics;
 });
@@ -35,7 +34,7 @@ export const fetchMetrics = createAsyncThunk('admin/fetchMetrics', async () => {
 export const redeemQr = createAsyncThunk(
   'admin/redeemQr',
   async ({ code, signature }: { code: string; signature: string }) => {
-    const { data } = await axios.post(`${API_BASE_URL}/qr/redeem`, { code, signature });
+    const { data } = await api.post('/qr/redeem', { code, signature });
     return data;
   },
 );

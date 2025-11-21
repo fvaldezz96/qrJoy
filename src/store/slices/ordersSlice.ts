@@ -1,7 +1,7 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import api from '../../api/client';
+import socketService from '../../services/socketService';
 import type { RootState } from '..';
 
 export interface OrderPayResponse {
@@ -20,11 +20,13 @@ export interface QR {
 export interface Order {
   _id: string;
   items: {
-    productId: string;
+    productId?: string;
+    productName?: string;
     qty: number;
     price: number;
   }[];
   tableId?: string;
+  tableNumber?: number | null;
   type: string;
   qrId?: string;
   qr: QR;
@@ -63,7 +65,7 @@ export const createOrder = createAsyncThunk(
       body.userId = st.auth.user._id;
     }
 
-    const { data } = await axios.post('http://192.168.0.12:3000/orders', body);
+    const { data } = await api.post('/orders', body);
 
     return data.data._id as string;
   },
@@ -82,7 +84,7 @@ export const payMockOrder = createAsyncThunk('orders/payMock', async (orderId: s
 
 export const getAllOrders = createAsyncThunk('orders/getAll', async () => {
   try {
-    const { data } = await axios.get('http://192.168.0.12:3000/orders');
+    const { data } = await api.get('/orders');
 
     const orders = data.data.orders;
     const total = data.data.total;
@@ -117,6 +119,34 @@ const slice = createSlice({
     clearOrders(s) {
       s.orders = [];
       s.ordersMeta = { total: 0, page: 1, limit: 10 };
+    },
+    // Acciones de WebSocket en tiempo real
+    orderCreatedRealtime(s, a: PayloadAction<Order>) {
+      // Agregar nueva orden al inicio de la lista
+      s.orders.unshift(a.payload);
+      s.ordersMeta.total += 1;
+    },
+    orderUpdatedRealtime(s, a: PayloadAction<Order>) {
+      // Actualizar orden existente
+      const index = s.orders.findIndex(order => order._id === a.payload._id);
+      if (index !== -1) {
+        s.orders[index] = a.payload;
+      }
+    },
+    orderStatusChangedRealtime(s, a: PayloadAction<{ orderId: string; status: string; updatedAt?: string }>) {
+      // Actualizar solo el status de la orden
+      const index = s.orders.findIndex(order => order._id === a.payload.orderId);
+      if (index !== -1) {
+        s.orders[index].status = a.payload.status;
+        if (a.payload.updatedAt) {
+          s.orders[index].updatedAt = a.payload.updatedAt;
+        }
+      }
+    },
+    orderDeletedRealtime(s, a: PayloadAction<{ orderId: string }>) {
+      // Remover orden de la lista
+      s.orders = s.orders.filter(order => order._id !== a.payload.orderId);
+      s.ordersMeta.total = Math.max(0, s.ordersMeta.total - 1);
     },
   },
   extraReducers: (b) => {
@@ -162,5 +192,12 @@ const slice = createSlice({
   },
 });
 
-export const { resetOrder, clearOrders } = slice.actions;
+export const { 
+  resetOrder, 
+  clearOrders, 
+  orderCreatedRealtime, 
+  orderUpdatedRealtime, 
+  orderStatusChangedRealtime, 
+  orderDeletedRealtime 
+} = slice.actions;
 export default slice.reducer;

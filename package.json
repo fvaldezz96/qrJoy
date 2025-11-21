@@ -8,8 +8,8 @@
     "start": "serve dist -s --listen 3000",
     "dev": "expo start --lan --clear",
     "dev:tunnel": "expo start --tunnel --clear",
-    "dev:local": "set EXPO_DEVTOOLS_LISTEN_ADDRESS=192.168.0.12 && expo start --lan",
-    "dev:force-ip": "set REACT_NATIVE_PACKAGER_HOSTNAME=192.168.0.12 && expo start --lan --clear",
+    "dev:local": "set EXPO_DEVTOOLS_LISTEN_ADDRESS=192.168.0.24 && expo start --lan",
+    "dev:force-ip": "set REACT_NATIVE_PACKAGER_HOSTNAME=192.168.0.24 && expo start --lan --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
@@ -40,6 +40,7 @@
     "@gorhom/bottom-sheet": "^5.2.6",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@reduxjs/toolkit": "^2.2.3",
+    "@types/socket.io-client": "^1.4.36",
     "axios": "^1.7.2",
     "expo-av": "^16.0.7",
     "expo-camera": "17.0.9",
@@ -68,6 +69,7 @@
     "react-redux": "^9.1.2",
     "redux-persist": "^6.0.0",
     "serve": "^14.2.5",
+    "socket.io-client": "^4.8.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

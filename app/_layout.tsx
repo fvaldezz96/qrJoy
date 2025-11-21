@@ -1,11 +1,25 @@
 import { Slot } from 'expo-router';
+import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ActivityIndicator, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { store, persistor } from '../src/store';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { store, persistor } from '../src/store';
+import { useAppSelector } from '../src/hook';
+import { setAuthToken } from '../src/api/setAuthToken';
+import type { RootState } from '../src/store';
+
+function AuthBootstrapper() {
+  const token = useAppSelector((s: RootState) => s.auth.token);
+
+  useEffect(() => {
+    setAuthToken(token ?? null);
+  }, [token]);
+
+  return null;
+}
 
 export default function RootLayout() {
   return (
@@ -19,6 +33,7 @@ export default function RootLayout() {
           } 
           persistor={persistor}
         >
+          <AuthBootstrapper />
           <Slot />
           <Toast />
         </PersistGate>

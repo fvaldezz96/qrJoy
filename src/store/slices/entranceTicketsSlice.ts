@@ -1,6 +1,6 @@
 import { createAsyncThunk, createEntityAdapter, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
 
+import api from '../../api/client';
 import { RootState } from '../index';
 
 // === TIPOS ===
@@ -75,15 +75,7 @@ export const fetchUserTickets = createAsyncThunk<
       return Object.values(state.entranceTickets.entities) as EntranceTicket[];
     }
 
-    const { data } = await axios.get(
-      `http://192.168.0.12:3000/entrance-tickets/my-tickets`,
-      {
-        headers: {
-          'x-user-id': userId,
-          // 'x-user-role': role, // opcional
-        },
-      },
-    );
+    const { data } = await api.get(`/entrance-tickets/my-tickets`);
 
     return data.data.tickets as EntranceTicket[];
   },
@@ -100,14 +92,10 @@ export const purchaseTickets = createAsyncThunk<
   PurchaseResponse,
   { ticketType: TicketType; quantity: number; userId: string }
 >('entranceTickets/purchase', async ({ ticketType, quantity, userId }) => {
-  const { data } = await axios.post(
-    `http://192.168.0.12:3000/entrance-tickets/purchase`,
-    { ticketType, quantity },
-    {
-      headers: { 'x-user-id': userId },
-      // ipcipc,
-    },
-  );
+  const { data } = await api.post(`/entrance-tickets/purchase`, {
+    ticketType,
+    quantity,
+  });
   return data.data.purchase as PurchaseResponse;
 });
 

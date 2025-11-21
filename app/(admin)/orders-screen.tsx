@@ -7,25 +7,42 @@ import {
   Animated,
   FlatList,
   Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
+import { useOrdersRealtime } from '../../src/hook/useWebSocket';
 import { getAllOrders, type Order } from '../../src/store/slices/ordersSlice';
+import { selectTables, type Table } from '../../src/store/slices/tablesSlice';
+import { fetchTables, selectActiveTables } from '../../src/store/slices/tablesSlice';
 
 // === INTERFAZ DE ITEM ===
 interface OrderItem {
   productId?: string;
+  productName?: string;
   qty: number;
   price: number;
 }
 
 // === COMPONENTE DE TARJETA ANIMADA ===
-function AnimatedOrderCard({ item }: { item: Order }) {
+function AnimatedOrderCard({ item, tableNumber }: { item: Order; tableNumber?: number | null }) {
+  // console.log('items result :', item)
+  const activeTables = useAppSelector(selectActiveTables);
+  // console.log('ative tables result : ' , activeTables)
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const dispatch = useAppDispatch();
+
+
+  useEffect(() => {
+    dispatch(fetchTables());
+  }, [dispatch]);
+
+  const currentTable = activeTables.find((t) => t._id === item.tableId);
+  const resolvedTableNumber = currentTable?.number ?? tableNumber ?? null;
 
   useEffect(() => {
     Animated.parallel([
@@ -56,9 +73,9 @@ function AnimatedOrderCard({ item }: { item: Order }) {
 
   const date = item.createdAt
     ? new Date(item.createdAt).toLocaleString('es-AR', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
     : 'Sin fecha';
 
   const statusConfig = {
@@ -126,7 +143,9 @@ function AnimatedOrderCard({ item }: { item: Order }) {
               <View style={styles.infoItem}>
                 <Ionicons name="location" size={16} color="#E53170" />
                 <Text style={styles.infoLabel}>Mesa</Text>
-                <Text style={styles.infoValue}>{item.tableId}</Text>
+                <Text style={styles.infoValue}>
+                  {resolvedTableNumber != null ? `Mesa ${resolvedTableNumber}` : item.tableId}
+                </Text>
               </View>
             )}
           </View>
@@ -138,7 +157,7 @@ function AnimatedOrderCard({ item }: { item: Order }) {
               item.items.map((it: OrderItem, idx: number) => (
                 <View key={idx} style={styles.itemRow}>
                   <Text style={styles.itemText}>
-                    • {it.productId || '—'} ×{it.qty}
+                    • {it.productName || it.productId || '—'} ×{it.qty}
                   </Text>
                   <Text style={styles.itemPrice}>${it.price}</Text>
                 </View>
@@ -159,7 +178,9 @@ function AnimatedOrderCard({ item }: { item: Order }) {
 // === PANTALLA PRINCIPAL ===
 export default function OrdersScreen() {
   const dispatch = useAppDispatch();
-  const { orders, loadingOrders, error } = useAppSelector((s) => s.orders);
+  const { error } = useAppSelector((s) => s.orders);
+  const { orders, loading: loadingOrders, isRealtime, isConnected } = useOrdersRealtime();
+  const tables = useAppSelector(selectTables) as Table[];
   const router = useRouter();
   const [step, setStep] = useState<'cart' | 'qr'>('cart');
 
@@ -170,6 +191,8 @@ export default function OrdersScreen() {
       router.back();
     }
   };
+
+  // Cargar órdenes inicialmente
   useEffect(() => {
     dispatch(getAllOrders());
   }, [dispatch]);
@@ -200,8 +223,18 @@ export default function OrdersScreen() {
       <View style={styles.container}>
         {/* Header Glass */}
         <View style={styles.headerGlass}>
-          <Ionicons name="cart" size={32} color="#FAD02C" />
-          <Text style={styles.title}>Órdenes Registradas</Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <Ionicons name="cart" size={32} color="#FAD02C" />
+              <Text style={styles.title}>Órdenes Registradas</Text>
+            </View>
+            <View style={styles.realtimeIndicator}>
+              <View style={[styles.statusDot, { backgroundColor: isConnected ? '#4CAF50' : '#F44336' }]} />
+              <Text style={styles.realtimeText}>
+                {isRealtime ? 'Tiempo Real' : 'Sin conexión'}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.subtitle}>Total: {orders.length} órdenes</Text>
         </View>
 
@@ -217,7 +250,11 @@ export default function OrdersScreen() {
               <Text style={styles.emptyText}>No hay órdenes registradas</Text>
             </View>
           }
-          renderItem={({ item, index }) => <AnimatedOrderCard item={item} />}
+          renderItem={({ item }) => {
+            const table = tables.find((t) => t._id === item.tableId);
+            const resolvedTableNumber = table?.number ?? item.tableNumber ?? null;
+            return <AnimatedOrderCard item={item} tableNumber={resolvedTableNumber} />;
+          }}
         />
       </View>
     </LinearGradient>
@@ -225,7 +262,7 @@ export default function OrdersScreen() {
 }
 
 // === ESTILOS ===
-const styles = {
+const styles = StyleSheet.create({
   gradientBg: { flex: 1 },
   container: { flex: 1, padding: 20, paddingTop: 50 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -256,6 +293,35 @@ const styles = {
       web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' },
     }),
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  realtimeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  realtimeText: {
+    fontSize: 12,
+    color: '#A7A9BE',
+    fontWeight: '600',
+  },
   title: {
     fontSize: 28,
     fontWeight: '900',
@@ -263,7 +329,7 @@ const styles = {
     letterSpacing: 1,
     textShadowColor: '#FAD02C60',
     textShadowRadius: 10,
-    marginTop: 8,
+    marginLeft: 8,
   },
   subtitle: {
     fontSize: 15,
@@ -383,4 +449,4 @@ const styles = {
     height: 6,
     width: '100%',
   },
-} as const;
+});
