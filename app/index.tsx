@@ -100,6 +100,7 @@ const STAFF_CARDS = [
 const ADMIN_CARDS = [
   { href: '/(admin)/dashboard', icon: 'stats-chart', color: '#FF6B9D', label: 'Dashboard' },
   { href: '/(admin)/orders-screen', icon: 'list', color: '#4FC3F7', label: 'Pedidos' },
+  { href: '/(admin)/products', icon: 'pricetag', color: '#10B981', label: 'Productos' },
 ] as const;
 
 export default function Home() {

@@ -44,6 +44,12 @@ export interface GetAllOrdersResponse {
   limit?: number;
 }
 
+export interface MpPreferenceResponse {
+  preferenceId: string;
+  initPoint: string;
+  sandboxInitPoint?: string;
+}
+
 // Crear una nueva orden
 export const createOrder = createAsyncThunk(
   'orders/create',
@@ -81,6 +87,22 @@ export const payMockOrder = createAsyncThunk('orders/payMock', async (orderId: s
     throw new Error(error.response?.data?.message || 'Error paying order');
   }
 });
+
+export const createMpPayment = createAsyncThunk(
+  'orders/createMpPayment',
+  async ({ orderId }: { orderId: string }) => {
+    const { data } = await api.post('/payments/mp/create', { orderId });
+    return data.data as MpPreferenceResponse;
+  },
+);
+
+export const confirmMpPayment = createAsyncThunk(
+  'orders/confirmMpPayment',
+  async ({ paymentId, orderId }: { paymentId?: string; orderId?: string }) => {
+    const { data } = await api.post('/payments/mp/confirm', { paymentId, orderId });
+    return data.data as OrderPayResponse;
+  },
+);
 
 export const getAllOrders = createAsyncThunk('orders/getAll', async () => {
   try {
@@ -169,6 +191,27 @@ const slice = createSlice({
         s.qr = a.payload;
       })
       .addCase(payMockOrder.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
+      })
+      .addCase(createMpPayment.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(createMpPayment.fulfilled, (s) => {
+        s.loading = false;
+      })
+      .addCase(createMpPayment.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
+      })
+      .addCase(confirmMpPayment.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(confirmMpPayment.fulfilled, (s, a) => {
+        s.loading = false;
+        s.qr = a.payload;
+      })
+      .addCase(confirmMpPayment.rejected, (s, a) => {
         s.loading = false;
         s.error = a.error.message;
       })

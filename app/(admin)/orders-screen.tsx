@@ -294,7 +294,8 @@ const styles = StyleSheet.create({
     }),
   },
   headerTop: {
-    flexDirection: 'row',
+    flexDirection: 'column',
+    columnGap: 16,
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
@@ -319,6 +320,7 @@ const styles = StyleSheet.create({
   },
   realtimeText: {
     fontSize: 12,
+    paddingTop: 2,
     color: '#A7A9BE',
     fontWeight: '600',
   },

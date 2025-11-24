@@ -18,7 +18,7 @@ import {
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
 import { clearCart, removeFromCart } from '../../src/store/slices/cartSlice';
-import { createOrder, payMockOrder } from '../../src/store/slices/ordersSlice';
+import { confirmMpPayment, createMpPayment, createOrder } from '../../src/store/slices/ordersSlice';
 import { fetchTables, selectActiveTables } from '../../src/store/slices/tablesSlice';
 
 export default function Cart() {
@@ -76,8 +76,14 @@ export default function Cart() {
     if (!selectedTableId) return Alert.alert('Error', 'Seleccioná una mesa antes de continuar');
 
     try {
-      const res = await dispatch(createOrder({ tableId: selectedTableId, type })).unwrap();
-      await dispatch(payMockOrder(res)).unwrap();
+      const orderId = await dispatch(createOrder({ tableId: selectedTableId, type })).unwrap();
+
+      const pref = await dispatch(createMpPayment({ orderId })).unwrap();
+
+      // TODO: abrir pref.initPoint en WebView / navegador para que el usuario complete el pago
+      // Por ahora, asumimos que el pago fue aprobado y confirmamos directamente por orderId.
+
+      await dispatch(confirmMpPayment({ orderId })).unwrap();
       setStep('qr');
       dispatch(clearCart());
     } catch (error: any) {
