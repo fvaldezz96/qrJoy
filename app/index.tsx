@@ -20,7 +20,7 @@ import Toast from 'react-native-toast-message';
 
 import { useAppDispatch, useAppSelector } from '../src/hook';
 import { loginThunk, logout } from '../src/store/slices/authSlice';
-import logo from '../src/assets/IMG_1459.png';
+import logo from '../assets/IMG_1459.png';
 const { width } = Dimensions.get('window');
 
 const isWeb = Platform.OS === 'web';
