@@ -10,6 +10,10 @@ export const APP_VERSION = '1.0.0';
 // http://localhost:8080/realms/joyrealm/protocol/openid-connect/token)
 export const KEYCLOAK_TOKEN_URL = process.env.EXPO_PUBLIC_KEYCLOAK_TOKEN_URL || '';
 
+// Issuer OIDC del realm (por ejemplo: http://localhost:8080/realms/joyrealm)
+// Se usa para el login interactivo (Google / SSO) vía AuthSession.
+export const KEYCLOAK_ISSUER = process.env.EXPO_PUBLIC_KEYCLOAK_ISSUER || '';
+
 // client_id registrado para este front o para la API que admite password grant
 export const KEYCLOAK_CLIENT_ID = process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID || 'joy-api';
 

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
-  "type": "module",
   "scripts": {
     "start": "serve dist -s --listen 3001",
     "dev": "expo start --lan --clear",
@@ -40,6 +39,7 @@
     "@reduxjs/toolkit": "^2.2.3",
     "@types/socket.io-client": "^1.4.36",
     "axios": "^1.7.2",
+    "expo-auth-session": "~7.0.10",
     "expo-av": "^16.0.7",
     "expo-camera": "17.0.9",
     "expo-constants": "18.0.10",
@@ -50,6 +50,7 @@
     "expo-router": "^3.5.24",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
+    "expo-web-browser": "~15.0.10",
     "mercadopago": "^2.10.0",
     "qrcode.react": "^4.2.0",
     "react": "18.2.0",

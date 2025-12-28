@@ -2,6 +2,7 @@
   "expo": {
     "name": "JoyPark Mobile",
     "slug": "joypark-mobile",
+    "scheme": "joypark",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -26,7 +27,8 @@
           "microphonePermission": "This app needs access to the microphone"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }
