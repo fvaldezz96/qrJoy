@@ -10,7 +10,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "joyparck",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "permissions": [
@@ -29,6 +33,11 @@
       ],
       "expo-font",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a325774b-d375-41e3-930c-d3b1b728c334"
+      }
+    }
   }
 }

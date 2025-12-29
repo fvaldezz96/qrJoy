@@ -17,6 +17,10 @@ Thumbs.db
 # === ANDROID / IOS ( solo si usás EAS) ===
 android/
 ios/
+!android/
+!android/**
+!ios/
+!ios/**
 # Expo cache (NUNCA subir)
 .expo/
 .expo-shared/

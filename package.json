@@ -39,6 +39,7 @@
     "@reduxjs/toolkit": "^2.2.3",
     "@types/socket.io-client": "^1.4.36",
     "axios": "^1.7.2",
+    "expo-apple-authentication": "~8.0.8",
     "expo-auth-session": "~7.0.10",
     "expo-av": "^16.0.7",
     "expo-camera": "17.0.9",
