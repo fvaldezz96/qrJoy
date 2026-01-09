@@ -31,7 +31,6 @@ export type UpsertProductDto = Omit<Product, '_id' | 'createdAt' | 'updatedAt'>;
 
 // === ADAPTER ===
 const productsAdapter = createEntityAdapter<Product>({
-  selectId: (product: any) => product._id,
   sortComparer: (a: Product, b: Product) => a.name.localeCompare(b.name),
 });
 
