@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '../hook';
-import { loginWithKeycloakCredentialsThunk } from '../store/slices/authSlice';
+import { loginThunk } from '../store/slices/authSlice'; // 🔄 CAMBIADO A LOGIN DIRECTO
 import { showAlert } from '../utils/showAlert';
 
 interface Props {
@@ -19,15 +19,15 @@ interface Props {
 }
 
 export default function LoginModal({ visible, onClose }: Props) {
-  const [email, setEmail] = useState('admin@joypark.io');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('user@joypark.io'); // 🔄 CAMBIADO A USER DEFAULT
+  const [password, setPassword] = useState('user123'); // 🔄 CAMBIADO A USER DEFAULT
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
 
   const onLogin = async () => {
     try {
       await dispatch(
-        loginWithKeycloakCredentialsThunk({ username: email, password }),
+        loginThunk({ email, password }), // 🔄 CAMBIADO A LOGIN DIRECTO
       ).unwrap();
       onClose();
     } catch {

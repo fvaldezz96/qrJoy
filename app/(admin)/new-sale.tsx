@@ -104,7 +104,7 @@ export default function NewSaleScreen() {
         })),
       };
 
-      const response = await fetch('http://192.168.0.25:3001/api/orders', {
+      const response = await fetch('http://localhost:3001/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,12 +118,12 @@ export default function NewSaleScreen() {
       }
 
       const result = await response.json();
-      
+
       showAlert('Éxito', 'Venta creada correctamente');
       setCartItems([]);
       setSelectedTableId(null);
       setStep('products');
-      
+
     } catch (error: any) {
       showAlert('Error', error.message || 'No se pudo crear la venta');
     }

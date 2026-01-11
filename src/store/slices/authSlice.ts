@@ -3,7 +3,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../api/client';
 import { setAuthToken } from '../../api/setAuthToken';
 import { readToken, removeToken, saveToken } from '../../utils/tokenStorage';
-import { KEYCLOAK_CLIENT_ID, KEYCLOAK_TOKEN_URL } from '../../config';
+// 🚫 KEYCLOAK ELIMINADO - Solo autenticación directa
+// import { KEYCLOAK_CLIENT_ID, KEYCLOAK_TOKEN_URL } from '../../config';
 
 type Role = 'user' | 'admin' | 'employee';
 
@@ -39,14 +40,39 @@ export const loginThunk = createAsyncThunk(
     const cleanEmail = sanitize(body.email);
     const cleanPass = sanitize(body.password);
 
-    const { data } = await api.post('/auth/login', { email: cleanEmail, password: cleanPass });
+    // IMPORTANTE: Intentar login directo primero, si falla usar fallback
+    try {
+      const { data } = await api.post('/auth/login', { email: cleanEmail, password: cleanPass });
+      const payload = data.data as { token: string; user: User };
 
-    const payload = data.data as { token: string; user: User };
+      // Guardar token de forma segura (nativo/web)
+      await saveToken(payload.token);
+      setAuthToken(payload.token);
+      return payload;
+    } catch (directError) {
+      console.warn('[Auth] Login directo falló, intentando con Sistema A:', directError);
+      
+      // Fallback: delegar login a Sistema A
+      try {
+        const delegatedResponse = await api.loginToSystemA(cleanEmail, cleanPass);
+        
+        if (delegatedResponse.success) {
+          const payload = {
+            token: delegatedResponse.token,
+            user: delegatedResponse.user,
+          };
 
-    // Guardar token de forma segura (nativo/web)
-    await saveToken(payload.token);
-    setAuthToken(payload.token);
-    return payload;
+          await saveToken(payload.token);
+          setAuthToken(payload.token);
+          return payload;
+        } else {
+          throw new Error(delegatedResponse.message || 'Login delegado falló');
+        }
+      } catch (fallbackError) {
+        console.error('[Auth] Error en fallback a Sistema A:', fallbackError);
+        throw fallbackError;
+      }
+    }
   },
 );
 
@@ -69,49 +95,16 @@ export const loginWithKeycloakTokenThunk = createAsyncThunk(
   },
 );
 
-// ✅ Login contra Keycloak usando usuario/contraseña (password grant)
-// Envía las credenciales al endpoint de token de Keycloak y, con el access_token
-// resultante, reutiliza la lógica de loginWithKeycloakTokenThunk.
-export const loginWithKeycloakCredentialsThunk = createAsyncThunk(
-  'auth/loginWithKeycloakCredentials',
-  async (
-    body: { username: string; password: string },
-    { dispatch },
-  ): Promise<{ token: string; user: User }> => {
-    const cleanUsername = sanitize(body.username);
-    const cleanPass = sanitize(body.password);
-
-    if (!KEYCLOAK_TOKEN_URL) {
-      throw new Error('KEYCLOAK_TOKEN_URL no está configurado');
-    }
-
-    const form = new URLSearchParams();
-    form.set('grant_type', 'password');
-    form.set('client_id', KEYCLOAK_CLIENT_ID);
-    form.set('username', cleanUsername);
-    form.set('password', cleanPass);
-
-    const res = await fetch(KEYCLOAK_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: form.toString(),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Login Keycloak falló: ${res.status} ${text}`);
-    }
-
-    const json = (await res.json()) as { access_token?: string };
-    if (!json.access_token) {
-      throw new Error('Keycloak no devolvió access_token');
-    }
-
-    // Reutilizar el flujo estándar basado en access_token
-    const result = await dispatch(loginWithKeycloakTokenThunk(json.access_token)).unwrap();
-    return result;
-  },
-);
+// 🚫 KEYCLOAK ELIMINADO - Login directo con JWT
+// export const loginWithKeycloakCredentialsThunk = createAsyncThunk(
+//   'auth/loginWithKeycloakCredentials',
+//   async (
+//     body: { username: string; password: string },
+//     { dispatch },
+//   ): Promise<{ token: string; user: User }> => {
+//     // ... código Keycloak eliminado
+//   },
+// );
 
 // ✅ Login con Google (envía idToken al backend)
 export const loginWithGoogleThunk = createAsyncThunk(
@@ -185,40 +178,12 @@ const slice = createSlice({
         s.loading = false;
         s.error = a.error.message;
       })
-      .addCase(loginWithKeycloakTokenThunk.pending, (s) => {
-        s.loading = true;
-        s.error = undefined;
-      })
-      .addCase(
-        loginWithKeycloakTokenThunk.fulfilled,
-        (s, a: PayloadAction<{ token: string; user: User }>,
-      ) => {
-        s.loading = false;
-        s.token = a.payload.token;
-        s.user = a.payload.user;
-      },
-      )
-      .addCase(loginWithKeycloakTokenThunk.rejected, (s, a) => {
-        s.loading = false;
-        s.error = a.error.message;
-      })
-      .addCase(loginWithKeycloakCredentialsThunk.pending, (s) => {
-        s.loading = true;
-        s.error = undefined;
-      })
-      .addCase(
-        loginWithKeycloakCredentialsThunk.fulfilled,
-        (s, a: PayloadAction<{ token: string; user: User }>,
-      ) => {
-        s.loading = false;
-        s.token = a.payload.token;
-        s.user = a.payload.user;
-      },
-      )
-      .addCase(loginWithKeycloakCredentialsThunk.rejected, (s, a) => {
-        s.loading = false;
-        s.error = a.error.message;
-      })
+      // 🚫 KEYCLOAK ELIMINADO - Removidos reducers de Keycloak
+      // .addCase(loginWithKeycloakCredentialsThunk.pending, (s) => {
+      //   s.loading = true;
+      //   s.error = undefined;
+      // })
+      // ... más código Keycloak eliminado
       .addCase(registerThunk.pending, (s) => {
         s.loading = true;
         s.error = undefined;

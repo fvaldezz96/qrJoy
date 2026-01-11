@@ -4,11 +4,11 @@
 import Constants from 'expo-constants';
 
 // 🏠 IP LOCAL DE TU PC (para desarrollo/offline)
-const LOCAL_PC_IP = '192.168.0.25'; // Cambia esto a tu IP real
+const LOCAL_PC_IP = 'localhost'; // Cambia esto a tu IP real
 const LOCAL_PORT = '3001';
 
 // 🌐 URLs de Producción en Railway
-const PRODUCTION_API_URL = 'https://qrjoy-api-production.up.railway.app';
+const PRODUCTION_API_URL = 'http://localhost:3001';
 const PRODUCTION_KEYCLOAK_URL = 'https://kcloud-keycloak-production.up.railway.app';
 
 // 🔍 Detectar ambiente y conexión
@@ -27,7 +27,7 @@ const getLocalNetworkIP = () => {
 // 🌐 Determinar URLs según disponibilidad
 const getApiUrls = () => {
   const localUrl = getLocalNetworkIP();
-  
+
   if (isProduction) {
     // Siempre producción en deploy
     return {
@@ -36,7 +36,7 @@ const getApiUrls = () => {
       source: 'railway'
     };
   }
-  
+
   // En desarrollo: intentar local primero, fallback a producción
   if (localUrl) {
     return {
@@ -45,7 +45,7 @@ const getApiUrls = () => {
       source: 'local_network'
     };
   }
-  
+
   // Fallback a producción si no hay local
   return {
     apiUrl: PRODUCTION_API_URL,
@@ -65,22 +65,22 @@ export const DATA_SOURCE = urls.source;
 export const SYNC_CONFIG = {
   // Intervalo de sincronización (ms)
   syncInterval: 30000, // 30 segundos
-  
+
   // Tiempo de espera para timeout
   timeout: 10000, // 10 segundos
-  
+
   // Reintentos de conexión
   maxRetries: 3,
-  
+
   // Modo offline (usar datos locales)
   offlineMode: false,
-  
+
   // Auto-backup cuando hay conexión
   autoBackup: true,
-  
+
   // Endpoint de sincronización
   syncEndpoint: '/sync',
-  
+
   // Endpoint de backup
   backupEndpoint: '/backup'
 };
@@ -93,7 +93,7 @@ const getKeycloakUrls = () => {
       issuer: `http://${LOCAL_PC_IP}:8080/realms/joywine`,
     };
   }
-  
+
   return {
     tokenUrl: `${PRODUCTION_KEYCLOAK_URL}/realms/joywine/protocol/openid-connect/token`,
     issuer: `${PRODUCTION_KEYCLOAK_URL}/realms/joywine`,
@@ -139,7 +139,7 @@ export const ENDPOINTS = {
     refresh: join(API_BASE_URL, '/auth/refresh'),
     logout: join(API_BASE_URL, '/auth/logout'),
   },
-  
+
   // Usuarios
   users: {
     base: join(API_BASE_URL, '/users'),
@@ -148,7 +148,7 @@ export const ENDPOINTS = {
     update: (id: string) => join(API_BASE_URL, '/users', id),
     delete: (id: string) => join(API_BASE_URL, '/users', id),
   },
-  
+
   // Productos
   products: {
     base: join(API_BASE_URL, '/products'),
@@ -157,7 +157,7 @@ export const ENDPOINTS = {
     update: (id: string) => join(API_BASE_URL, '/products', id),
     delete: (id: string) => join(API_BASE_URL, '/products', id),
   },
-  
+
   // Órdenes
   orders: {
     base: join(API_BASE_URL, '/orders'),
@@ -167,7 +167,7 @@ export const ENDPOINTS = {
     delete: (id: string) => join(API_BASE_URL, '/orders', id),
     getAll: (query?: any) => withQuery(join(API_BASE_URL, '/orders'), query || {}),
   },
-  
+
   // Tickets
   tickets: {
     base: join(API_BASE_URL, '/tickets'),
@@ -175,7 +175,7 @@ export const ENDPOINTS = {
     getById: (id: string) => join(API_BASE_URL, '/tickets', id),
     getAll: (query?: any) => withQuery(join(API_BASE_URL, '/tickets'), query || {}),
   },
-  
+
   // Mesas
   tables: {
     base: join(API_BASE_URL, '/tables'),
@@ -185,21 +185,21 @@ export const ENDPOINTS = {
     delete: (id: string) => join(API_BASE_URL, '/tables', id),
     getAll: () => join(API_BASE_URL, '/tables'),
   },
-  
+
   // QR
   qr: {
     generate: join(API_BASE_URL, '/qr/generate'),
     scan: join(API_BASE_URL, '/qr/scan'),
     validate: join(API_BASE_URL, '/qr/validate'),
   },
-  
+
   // Entradas
   entranceTickets: {
     base: join(API_BASE_URL, '/entrance-tickets'),
     create: join(API_BASE_URL, '/entrance-tickets'),
     getAll: () => join(API_BASE_URL, '/entrance-tickets'),
   },
-  
+
   // Comandas
   comandas: {
     base: join(API_BASE_URL, '/comandas'),
@@ -208,21 +208,21 @@ export const ENDPOINTS = {
     update: (id: string) => join(API_BASE_URL, '/comandas', id),
     getAll: () => join(API_BASE_URL, '/comandas'),
   },
-  
+
   // External (integración con Product App)
   external: {
     orders: join(API_BASE_URL, '/external/orders'),
     registerPayment: (orderId: string) => join(API_BASE_URL, `/external/orders/${orderId}/register-payment`),
     cashRegister: join(API_BASE_URL, '/external/cash-register'),
   },
-  
+
   // Sincronización
   sync: {
     base: join(API_BASE_URL, SYNC_CONFIG.syncEndpoint),
     backup: join(API_BASE_URL, SYNC_CONFIG.backupEndpoint),
     status: join(API_BASE_URL, '/sync/status'),
   },
-  
+
   // Health check
   health: join(API_BASE_URL, '/health'),
 };

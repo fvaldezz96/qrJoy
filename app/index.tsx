@@ -97,8 +97,8 @@ export default function Home() {
           <View style={styles.logoGlow}>
             <Image source={logo} style={styles.logo} resizeMode="contain" />
           </View>
-          <Text style={styles.title}>JOYWINE</Text>
-          <Text style={styles.subtitle}>NIGHTCLUB • SUMMER 2026</Text>
+          {/* <Text style={styles.title}>JOYWINE</Text>
+          <Text style={styles.subtitle}>NIGHTCLUB • SUMMER 2026</Text> */}
 
           {/* USER AVATAR / LOGIN */}
           <TouchableOpacity style={styles.userButton} onPress={user ? toggleMenu : openLogin}>
@@ -137,8 +137,8 @@ export default function Home() {
           </Animated.View>
         )}
 
-        {/* GUEST SECTION */}
-        {!isStaff && (
+        {/* GUEST SECTION - MOSTRAR SIEMPRE PARA CLIENTES */}
+        {!user && (
           <>
             <Text style={styles.sectionTitle}>EXPERIENCIA VIP</Text>
             <View style={[styles.guestGrid, isTablet && styles.guestGridTablet, isDesktop && styles.guestGridDesktop]}>
@@ -146,6 +146,22 @@ export default function Home() {
                 { href: '/(user)/products', icon: 'wine', color: '#ff3366', label: 'BOTELLAS & CARTA' },
                 { href: '/(user)/my-qr', icon: 'qr-code', color: '#00ffff', label: 'RESERVAS & QR' },
                 { href: '/(user)/events', icon: 'musical-notes', color: '#ffaa00', label: 'EVENTOS HOY' },
+              ].map((card) => (
+                <NeonCard key={card.href} href={card.href} color={card.color} icon={card.icon} label={card.label} />
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* LOGGED USER SECTION */}
+        {user && !isStaff && (
+          <>
+            <Text style={styles.sectionTitle}>MI EXPERIENCIA</Text>
+            <View style={[styles.guestGrid, isTablet && styles.guestGridTablet, isDesktop && styles.guestGridDesktop]}>
+              {[
+                { href: '/(user)/products', icon: 'wine', color: '#ff3366', label: 'BOTELLAS & CARTA' },
+                { href: '/(user)/my-qr', icon: 'qr-code', color: '#00ffff', label: 'MIS QR' },
+                { href: '/(user)/orders', icon: 'receipt-outline', color: '#ffaa00', label: 'MIS ÓRDENES' },
               ].map((card) => (
                 <NeonCard key={card.href} href={card.href} color={card.color} icon={card.icon} label={card.label} />
               ))}
@@ -170,12 +186,25 @@ export default function Home() {
           </>
         )}
 
-        {/* ADMIN SECTION */}
-        <Text style={styles.sectionTitle}>ADMINISTRACIÓN</Text>
-
+        {/* ADMIN SECTION - SOLO PARA ADMIN */}
+        {isAdmin && (
+          <>
+            <Text style={styles.sectionTitle}>ADMINISTRACIÓN</Text>
+            <View style={[styles.grid, isDesktop && styles.gridDesktop]}>
+              {[
+                { href: '/(admin)/products', icon: 'restaurant-outline', color: '#ff3366', label: 'CARTA DE PRODUCTOS' },
+                { href: '/(admin)/orders-screen', icon: 'list-outline', color: '#00ffff', label: 'ÓRDENES' },
+                { href: '/(admin)/dashboard', icon: 'bar-chart-outline', color: '#ffaa00', label: 'DASHBOARD' },
+                { href: '/(admin)/stock', icon: 'cube-outline', color: '#00ff00', label: 'STOCK' },
+              ].map((card) => (
+                <NeonCard key={card.href} href={card.href} color={card.color} icon={card.icon} label={card.label} small />
+              ))}
+            </View>
+          </>
+        )}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2026 JOYWINE NIGHTCLUB • ALL RIGHTS RESERVED</Text>
+          <Text style={styles.footerText}> 2026 JOYWINE NIGHTCLUB • ALL RIGHTS RESERVED</Text>
           <Text style={styles.footerSub}>San Juan • Argentina</Text>
         </View>
       </ScrollView>

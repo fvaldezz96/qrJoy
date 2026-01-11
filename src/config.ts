@@ -1,35 +1,62 @@
-// Detectar si estamos en producción
-const isProduction = process.env.NODE_ENV === 'production' || 
-  window?.location?.hostname?.includes('railway.app');
+// Detectar entorno automáticamente
+const isProduction = process.env.NODE_ENV === 'production';
+const isDocker = process.env.EXPO_PUBLIC_DOCKER === 'true';
 
-// URLs de producción de Railway
-const PRODUCTION_API_URL = 'https://qrjoy-api-production.up.railway.app';
-const PRODUCTION_KEYCLOAK_URL = 'https://kcloud-keycloak-production.up.railway.app';
+// URLs dinámicas según entorno
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || (
+  isProduction
+    ? process.env.EXPO_PUBLIC_RAILWAY_API_URL || 'https://qrjoy-production.up.railway.app'
+    : isDocker
+      ? process.env.EXPO_PUBLIC_DOCKER_API_URL || 'http://localhost:3002'
+      : process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3002'
+);
 
-export const API_BASE_URL =
-  isProduction 
-    ? PRODUCTION_API_URL
-    : process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || 'http://192.168.0.25:3001';
+export const SYSTEM_A_API_URL = process.env.EXPO_PUBLIC_SYSTEM_A_API_URL || (
+  isProduction
+    ? process.env.EXPO_PUBLIC_RAILWAY_SYSTEM_A_URL || 'https://product-api-production.up.railway.app'
+    : isDocker
+      ? process.env.EXPO_PUBLIC_DOCKER_SYSTEM_A_URL || 'http://localhost:3000'
+      : process.env.EXPO_PUBLIC_LOCAL_SYSTEM_A_URL || 'http://localhost:3000'
+);
 
 export const APP_NAME = 'JoyPark';
 export const APP_VERSION = '1.0.0';
 
-// Configuración de Keycloak para el front
-// URL del endpoint de token del realm (por ejemplo:
-// http://192.168.0.25:8080/realms/joyrealm/protocol/openid-connect/token)
-export const KEYCLOAK_TOKEN_URL = isProduction 
-  ? `${PRODUCTION_KEYCLOAK_URL}/realms/joywine/protocol/openid-connect/token`
-  : process.env.EXPO_PUBLIC_KEYCLOAK_TOKEN_URL || '';
+// 🔐 CONFIGURACIÓN JWT DIRECTA
+export const AUTH_CONFIG = {
+  method: 'direct',
 
-// Issuer OIDC del realm (por ejemplo: http://192.168.0.25:8080/realms/joyrealm)
-// Se usa para el login interactivo (Google / SSO) vía AuthSession.
-export const KEYCLOAK_ISSUER = isProduction
-  ? `${PRODUCTION_KEYCLOAK_URL}/realms/joywine`
-  : process.env.EXPO_PUBLIC_KEYCLOAK_ISSUER || '';
+  // Endpoints de autenticación
+  endpoints: {
+    login: `${API_BASE_URL}/auth/login`,
+    register: `${API_BASE_URL}/auth/register`,
+    me: `${API_BASE_URL}/auth/me`,
+  },
 
-// client_id registrado para este front o para la API que admite password grant
-export const KEYCLOAK_CLIENT_ID = process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID || 'joy-api';
+  // Configuración de tokens
+  tokenStorage: 'localStorage',
+  tokenExpiry: 3600000, // 1 hora
 
+  // Auto-refresh
+  autoRefresh: true,
+  refreshThreshold: 300000 // 5 minutos antes de expirar
+};
+
+// 🚫 KEYCLOAK ELIMINADO - Variables mantenidas para compatibilidad
+export const KEYCLOAK_TOKEN_URL = '';
+export const KEYCLOAK_ISSUER = '';
+export const KEYCLOAK_CLIENT_ID = '';
+
+// 🌐 CONFIGURACIÓN DE ENTORNOS
+export const ENV_CONFIG = {
+  isProduction,
+  isDocker,
+  apiBaseUrl: API_BASE_URL,
+  systemAUrl: SYSTEM_A_API_URL,
+  nodeEnv: process.env.NODE_ENV || 'development',
+};
+
+// 🔗 HELPER PARA URLS CON QUERY PARAMS
 const join = (...parts: string[]) =>
   parts
     .filter(Boolean)
@@ -48,6 +75,7 @@ export const withQuery = (url: string, params?: Record<string, any>) => {
   return qs ? `${url}?${qs}` : url;
 };
 
+// 🛣️ ENDPOINTS DINÁMICOS
 export const ENDPOINTS = {
   auth: {
     login: join(API_BASE_URL, '/auth/login'),
@@ -60,7 +88,6 @@ export const ENDPOINTS = {
     all: join(API_BASE_URL, '/users'),
   },
 
-  
   products: {
     base: join(API_BASE_URL, '/products'),
     byId: (id: string) => join(API_BASE_URL, `/products/${id}`),
@@ -68,7 +95,7 @@ export const ENDPOINTS = {
     update: (id: string) => join(API_BASE_URL, `/products/${id}`),
     patch: (id: string) => join(API_BASE_URL, `/products/${id}`),
     softDelete: (id: string) => join(API_BASE_URL, `/products/${id}`),
-    restore: (id: string) => join(API_BASE_URL, `/products/${id}/restore`),
+    restore: (id: string) => join(API_BASE_URL, `/products/${id}`),
     hardDelete: (id: string) => join(API_BASE_URL, `/products/${id}`),
   },
 
