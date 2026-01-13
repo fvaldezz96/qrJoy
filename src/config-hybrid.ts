@@ -10,8 +10,8 @@ import { Platform } from 'react-native';
 const LOCAL_PC_IP = Platform.OS === 'web' ? 'localhost' : '10.0.2.2';
 const LOCAL_PORT = '3002';
 
-// 🌐 URLs de Producción en Railway
-const PRODUCTION_API_URL = 'http://localhost:3001';
+// 🌐 URLs de Producción en Railway - HARDCODEADAS
+const PRODUCTION_API_URL = 'https://qrjoy-api-production.up.railway.app';
 const PRODUCTION_KEYCLOAK_URL = 'https://kcloud-keycloak-production.up.railway.app';
 
 // 🔍 Detectar ambiente y conexión

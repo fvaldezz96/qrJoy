@@ -17,9 +17,9 @@ class APIConfig {
     } else {
       console.log('🚀 Modo producción detectado');
       this.apis = {
-        product: 'http://localhost:3000',
-        qr: 'http://localhost:3001',
-        productFront: 'http://localhost:8081',
+        product: 'https://product-api-production-b9c7.up.railway.app',
+        qr: 'https://qrjoy-api-production.up.railway.app',
+        productFront: 'https://gracious-balance-production.up.railway.app',
         qrFront: 'https://qrjoy-production-58c3.up.railway.app'
       };
     }
