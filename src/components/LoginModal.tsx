@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  Image,
   Modal,
   StyleSheet,
   Text,
@@ -15,6 +18,7 @@ import Toast from 'react-native-toast-message';
 
 import { useAppDispatch, useAppSelector } from '../hook';
 import { loginThunk, loginWithGoogleThunk } from '../store/slices/authSlice';
+import logo from '../../assets/IMG_1459.png';
 
 interface Props {
   visible: boolean;
@@ -27,6 +31,48 @@ export default function LoginModal({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
   const { loading: authLoading } = useAppSelector((s) => s.auth);
 
+  // Animation Values
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      opacityAnim.setValue(0);
+      scaleAnim.setValue(0.9);
+    }
+  }, [visible]);
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
   // Google Auth
   const [_request, _response, promptAsync] = Google.useIdTokenAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'dummy',
@@ -37,7 +83,7 @@ export default function LoginModal({ visible, onClose }: Props) {
   const handleLogin = async () => {
     try {
       await dispatch(loginThunk({ email, password })).unwrap();
-      onClose();
+      handleClose();
       Toast.show({ type: 'success', text1: 'Acceso concedido' });
     } catch {
       Toast.show({ type: 'error', text1: 'Acceso denegado', text2: 'Credenciales inválidas' });
@@ -53,7 +99,7 @@ export default function LoginModal({ visible, onClose }: Props) {
       const result = await promptAsync();
       if (result.type === 'success' && result.params.id_token) {
         await dispatch(loginWithGoogleThunk(result.params.id_token)).unwrap();
-        onClose();
+        handleClose();
         Toast.show({ type: 'success', text1: 'Login con Google', text2: 'Sesión iniciada' });
       }
     } catch (e: any) {
@@ -61,12 +107,18 @@ export default function LoginModal({ visible, onClose }: Props) {
     }
   };
 
+  const animationStyle = {
+    opacity: opacityAnim,
+    transform: [{ scale: scaleAnim }],
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="none">
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Ionicons name="diamond" size={60} color="#ff00aa" style={{ marginBottom: 16 }} />
-          <Text style={styles.modalTitle}>JOYWINE</Text>
+        <Animated.View style={[styles.modalContent, animationStyle]}>
+          <View style={styles.logoCircle}>
+            <Image source={logo} style={styles.logoImage} />
+          </View>
           <Text style={styles.modalSubtitle}>Acceso Exclusivo</Text>
 
           <TextInput
@@ -101,17 +153,18 @@ export default function LoginModal({ visible, onClose }: Props) {
             <Text style={styles.googleText}>Continuar con Google</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={handleClose}>
             <Text style={styles.cancelText}>Cancelar</Text>
           </TouchableOpacity>
 
           <Link href="/(auth)/register" asChild>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={handleClose}>
               <Text style={styles.registerText}>¿Primera vez? Solicitar acceso VIP</Text>
             </TouchableOpacity>
           </Link>
-        </View>
+        </Animated.View>
       </View>
+      <Toast />
     </Modal>
   );
 }
@@ -128,7 +181,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#aa00ff',
   },
-  modalTitle: { fontSize: 36, fontWeight: '900', color: '#fff', letterSpacing: 4 },
+  logoCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 999,
+    backgroundColor: 'rgba(170,0,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#ff00aa',
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
+  },
   modalSubtitle: { fontSize: 16, color: '#e0aaff', marginBottom: 20 },
   input: {
     backgroundColor: 'rgba(255,255,255,0.05)',

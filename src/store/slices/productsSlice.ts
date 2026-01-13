@@ -122,11 +122,13 @@ const productsSlice = createSlice({
       .addCase(fetchProducts.pending, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = true;
+        state.loading = true; // ✅ Fix: Update global loading
         state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = false;
+        state.loading = false; // ✅ Fix: Update global loading
         state.lastFetched = Date.now();
 
         if (category === 'all') {
@@ -142,6 +144,7 @@ const productsSlice = createSlice({
       .addCase(fetchProducts.rejected, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = false;
+        state.loading = false; // ✅ Fix: Update global loading
         state.error = action.error.message || 'Error al cargar productos';
       })
       .addCase(createProduct.pending, (state) => {

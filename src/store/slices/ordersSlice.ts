@@ -53,13 +53,26 @@ export interface MpPreferenceResponse {
 // Crear una nueva orden
 export const createOrder = createAsyncThunk(
   'orders/create',
-  async ({ tableId, type }: { tableId: string; type: string }, { getState }) => {
+  async ({ tableId, type, items: distinctItems }: { tableId?: string; type: string; items?: any[] }, { getState }) => {
     const st = getState() as RootState;
-    const items = st.cart.items.map((i) => ({
-      productId: i.product._id,
-      qty: i.qty,
-      price: i.product.price,
-    }));
+
+    // Use provided items OR fallback to global cart
+    let items = distinctItems;
+
+    if (!items) {
+      items = st.cart.items.map((i) => ({
+        productId: i.product._id,
+        qty: i.qty,
+        price: i.product.price,
+      }));
+    } else {
+      // Ensure format if passing from local state
+      items = items.map(i => ({
+        productId: i.product._id,
+        qty: i.quantity || i.qty,
+        price: i.price
+      }));
+    }
 
     const body: Record<string, any> = {
       items,

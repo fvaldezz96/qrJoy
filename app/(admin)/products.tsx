@@ -34,7 +34,17 @@ interface Product {
 export default function AdminProductsScreen() {
   const router = useRouter();
   const { user } = useAppSelector((s) => s.auth);
-  const isStaff = user?.role === 'admin' || user?.role === 'employee';
+
+  // Helper to extract role safely (handles string or object from population)
+  const getRoleName = (u: typeof user) => {
+    if (!u || !u.role) return 'guest';
+    if (typeof u.role === 'string') return u.role;
+    // @ts-ignore - Handle populated role object
+    return u.role.type || u.role.name || 'guest';
+  };
+
+  const userRole = getRoleName(user);
+  const isStaff = userRole === 'admin' || userRole === 'employee';
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

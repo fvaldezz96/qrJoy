@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Platform, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, ScrollView, Text, View, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
 import { fetchMetrics } from '../../src/store/slices/adminSlice';
@@ -98,6 +99,52 @@ function AnimatedMetric({
         </View>
       </LinearGradient>
     </Animated.View>
+  );
+}
+
+// === COMPONENTE TARJETA DE ACCIÓN ===
+function ActionCard({
+  title,
+  icon,
+  color,
+  gradient,
+  route
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  gradient: readonly [string, string];
+  route: any;
+}) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={styles.metricCard}
+      onPress={() => router.push(route)}
+      activeOpacity={0.8}
+    >
+      <LinearGradient
+        colors={gradient}
+        style={styles.metricGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={{
+          backgroundColor: '#1A1A2E',
+          padding: 20,
+          borderRadius: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 110,
+          gap: 10
+        }}>
+          <View style={[styles.iconCircle, { backgroundColor: color + '30', width: 40, height: 40 }]}>
+            <Ionicons name={icon} size={24} color={color} />
+          </View>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{title}</Text>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
   );
 }
 
@@ -262,6 +309,48 @@ export default function Dashboard() {
                 delay={200}
               />
             </View>
+          </View>
+        </View>
+
+        {/* --- ACCESOS RÁPIDOS --- */}
+        <View style={{ marginTop: 30 }}>
+          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+          <View style={styles.metricsGrid}>
+            <ActionCard
+              title="Productos"
+              icon="cube"
+              color="#ff00ff"
+              gradient={['#3D0B2C', '#aa00ff']}
+              route="/(admin)/products"
+            />
+            <ActionCard
+              title="Mesas"
+              icon="grid"
+              color="#FAD02C"
+              gradient={['#3D3D0B', '#FAD02C']}
+              route="/(admin)/tables"
+            />
+            <ActionCard
+              title="Órdenes"
+              icon="list"
+              color="#FF6B9D"
+              gradient={['#3D0B2C', '#E53170']}
+              route="/(admin)/orders-screen"
+            />
+            <ActionCard
+              title="Escanear QR"
+              icon="scan"
+              color="#00FFAA"
+              gradient={['#1E3D0B', '#00FF88']}
+              route="/(admin)/qr-scanner"
+            />
+            <ActionCard
+              title="Comandas"
+              icon="restaurant"
+              color="#ffff00"
+              gradient={['#3D3D0B', '#cccc00']}
+              route="/(admin)/comandas"
+            />
           </View>
         </View>
 

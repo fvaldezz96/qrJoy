@@ -3,9 +3,12 @@
 
 import Constants from 'expo-constants';
 
+import { Platform } from 'react-native';
+
 // 🏠 IP LOCAL DE TU PC (para desarrollo/offline)
-const LOCAL_PC_IP = 'localhost'; // Cambia esto a tu IP real
-const LOCAL_PORT = '3001';
+// Web = localhost, Android Emulator = 10.0.2.2
+const LOCAL_PC_IP = Platform.OS === 'web' ? 'localhost' : '10.0.2.2';
+const LOCAL_PORT = '3002';
 
 // 🌐 URLs de Producción en Railway
 const PRODUCTION_API_URL = 'http://localhost:3001';
@@ -211,9 +214,9 @@ export const ENDPOINTS = {
 
   // External (integración con Product App)
   external: {
-    orders: join(API_BASE_URL, '/external/orders'),
-    registerPayment: (orderId: string) => join(API_BASE_URL, `/external/orders/${orderId}/register-payment`),
-    cashRegister: join(API_BASE_URL, '/external/cash-register'),
+    orders: join(API_BASE_URL, '/api/external/orders'),
+    registerPayment: (orderId: string) => join(API_BASE_URL, `/api/external/orders/${orderId}/register-payment`),
+    cashRegister: join(API_BASE_URL, '/api/external/cash-register'),
   },
 
   // Sincronización

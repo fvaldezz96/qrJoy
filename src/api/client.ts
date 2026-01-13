@@ -1,5 +1,6 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { API_BASE_URL, SYSTEM_A_API_URL, ENV_CONFIG } from '../config';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { ENV_CONFIG, SYSTEM_A_API_URL } from "../config";
+import { API_BASE_URL } from "../config-hybrid";
 
 // 🌐 Cliente API centralizado con soporte multi-entorno
 class ApiClient {
@@ -7,33 +8,37 @@ class ApiClient {
   public fallbackInstance?: AxiosInstance;
 
   constructor() {
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Client-Platform': 'expo-web',
+      'X-Client-Environment': ENV_CONFIG.isProduction ? 'production' : ENV_CONFIG.isDocker ? 'docker' : 'local',
+      'X-Client-Base-URL': API_BASE_URL,
+    };
+
     // Instancia principal para la API QR
     this.instance = axios.create({
       baseURL: API_BASE_URL,
       timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': `JoyPark/${process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0'} (${ENV_CONFIG.nodeEnv})`,
-        'X-Client-Platform': 'expo-web',
-        'X-Client-Environment': ENV_CONFIG.isProduction ? 'production' : ENV_CONFIG.isDocker ? 'docker' : 'local',
-        'X-Client-Base-URL': API_BASE_URL,
-      },
+      headers,
     });
 
-    // Instancia fallback para API local (solo en desarrollo/docker)
-    if (!ENV_CONFIG.isProduction && API_BASE_URL !== SYSTEM_A_API_URL) {
+    // Instancia fallback para API local (solo en desarrollo/docker o si estamos forzando localhost)
+    const isLocal = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1') || API_BASE_URL.includes('10.0.2.2');
+
+    if ((!ENV_CONFIG.isProduction || isLocal) && API_BASE_URL !== SYSTEM_A_API_URL) {
+      const fallbackHeaders: any = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Client-Platform': 'expo-web',
+        'X-Client-Environment': ENV_CONFIG.isProduction ? 'production' : ENV_CONFIG.isDocker ? 'docker' : 'local',
+        'X-Client-Base-URL': SYSTEM_A_API_URL,
+      };
+
       this.fallbackInstance = axios.create({
         baseURL: SYSTEM_A_API_URL,
         timeout: 10000,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': `JoyPark/${process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0'} (${ENV_CONFIG.nodeEnv})`,
-          'X-Client-Platform': 'expo-web',
-          'X-Client-Environment': ENV_CONFIG.isProduction ? 'production' : ENV_CONFIG.isDocker ? 'docker' : 'local',
-          'X-Client-Base-URL': SYSTEM_A_API_URL,
-        },
+        headers: fallbackHeaders,
       });
     }
 

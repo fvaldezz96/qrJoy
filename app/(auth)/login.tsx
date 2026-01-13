@@ -4,9 +4,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  // Alert,
-  // Dimensions,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,46 +12,18 @@ import {
   View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import Constants from 'expo-constants';
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
-import {
-  loginThunk,
-  // loginWithKeycloakCredentialsThunk,
-  loginWithKeycloakTokenThunk,
-} from '../../src/store/slices/authSlice';
-import { KEYCLOAK_CLIENT_ID, KEYCLOAK_ISSUER } from '../../src/config';
-
-WebBrowser.maybeCompleteAuthSession();
+import { loginThunk } from '../../src/store/slices/authSlice';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [attempts, setAttempts] = useState(0);
-  // const [adminMode, setAdminMode] = useState(true);
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading } = useAppSelector((s) => s.auth);
-
-  const useProxy = Constants.appOwnership === 'expo' && Platform.OS !== 'web';
-
-  // Discovery OIDC (Keycloak fallback to prevent crash)
-  const discovery = AuthSession.useAutoDiscovery(KEYCLOAK_ISSUER || 'https://accounts.google.com');
-
-  const redirectUri = AuthSession.makeRedirectUri();
-
-  const [request, _response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: KEYCLOAK_CLIENT_ID || 'dummy',
-      redirectUri,
-      responseType: AuthSession.ResponseType.Code,
-      usePKCE: true,
-      scopes: ['openid', 'profile', 'email'],
-    },
-    discovery,
-  );
 
   const onLogin = async () => {
     if (!email || !password) {
@@ -69,38 +38,6 @@ export default function Login() {
     } catch (error) {
       setAttempts(attempts + 1);
       Toast.show({ type: 'error', text1: 'Error', text2: 'Credenciales inválidas' });
-    }
-  };
-
-  const onGoogleLogin = async () => {
-    if (!KEYCLOAK_ISSUER || !discovery) {
-      Toast.show({ type: 'info', text1: 'Google Auth', text2: 'No configurado en este ambiente' });
-      return;
-    }
-
-    try {
-      const result = await promptAsync();
-      if (result.type !== 'success') return;
-      const code = result.params.code;
-      if (!code) return;
-
-      const tokenResponse = await AuthSession.exchangeCodeAsync(
-        {
-          clientId: KEYCLOAK_CLIENT_ID,
-          code,
-          redirectUri,
-          extraParams: request?.codeVerifier ? { code_verifier: request.codeVerifier } : {},
-        },
-        discovery,
-      );
-
-      const accessToken = tokenResponse.accessToken;
-      if (!accessToken) return;
-
-      await dispatch(loginWithKeycloakTokenThunk(accessToken)).unwrap();
-      router.replace('/');
-    } catch (e: any) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo iniciar con Google' });
     }
   };
 
@@ -143,17 +80,6 @@ export default function Login() {
             ) : (
               <Text style={styles.primaryBtnText}>Iniciar Sesión</Text>
             )}
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.googleBtn} onPress={onGoogleLogin} disabled={loading}>
-            <Ionicons name="logo-google" size={20} color="#fff" />
-            <Text style={styles.googleBtnText}>Continuar con Google</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.push('/(auth)/register')}>
@@ -212,20 +138,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  divider: { flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 24 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-  dividerText: { color: '#888', paddingHorizontal: 12, fontSize: 14 },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DB4437',
-    width: '100%',
-    height: 52,
-    borderRadius: 16,
-    gap: 12,
-  },
-  googleBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   linkBtn: { marginTop: 24 },
   linkText: { color: '#A7A9BE', fontSize: 15 },
   linkTextBold: { color: '#FAD02C', fontWeight: '800' },

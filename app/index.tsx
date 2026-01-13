@@ -38,8 +38,18 @@ export default function Home() {
 
   // Auth State
   const { user } = useAppSelector((s) => s.auth);
-  const isAdmin = user?.role === 'admin';
-  const isStaff = user?.role === 'admin' || user?.role === 'employee';
+
+  // Helper to extract role safely (handles string or object from population)
+  const getRoleName = (u: typeof user) => {
+    if (!u || !u.role) return 'guest';
+    if (typeof u.role === 'string') return u.role;
+    // @ts-ignore - Handle populated role object
+    return u.role.type || u.role.name || 'guest';
+  };
+
+  const userRole = getRoleName(user);
+  const isAdmin = userRole === 'admin';
+  const isStaff = userRole === 'admin' || userRole === 'employee';
 
   // Products State
   const products = useAppSelector(selectAllProducts);
@@ -51,6 +61,8 @@ export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [filter, setFilter] = useState<'all' | 'drink' | 'food'>('all');
+  const [menuY, setMenuY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Load Products
   useEffect(() => {
@@ -60,6 +72,9 @@ export default function Home() {
   const filteredProducts = products
     .filter((p) => p.category !== 'ticket')
     .filter((p) => filter === 'all' || p.category === filter);
+
+  console.log('[Home] Products loaded:', products.length, 'Filtered:', filteredProducts.length, 'Filter:', filter);
+
 
   const handleLogout = () => {
     dispatch(logout());
@@ -73,9 +88,33 @@ export default function Home() {
     setMenuVisible(false);
   };
 
+  const navigateTo = (route: string) => {
+    console.log('[navigateTo] Attempting navigation to:', route);
+    setMenuVisible(false);
+
+    // Try multiple navigation methods
+    try {
+      router.push(route);
+      console.log('[navigateTo] router.push called for:', route);
+    } catch (error) {
+      console.error('[navigateTo] router.push failed:', error);
+      // Fallback to replace
+      try {
+        router.replace(route);
+        console.log('[navigateTo] router.replace called for:', route);
+      } catch (replaceError) {
+        console.error('[navigateTo] router.replace also failed:', replaceError);
+      }
+    }
+  };
+
   return (
     <LinearGradient colors={['#0a001f', '#1a0033', '#2d0055']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.logoGlow}>
@@ -108,48 +147,55 @@ export default function Home() {
                 <Text style={styles.menuName}>{user?.name || 'VIP Guest'}</Text>
                 <Text style={styles.menuEmail}>{(user?.email || '').substring(0, 20)}...</Text>
                 <View style={[styles.roleBadge, isAdmin && styles.adminBadge]}>
-                  <Text style={styles.roleText}>{(user?.role || 'guest').toUpperCase()}</Text>
+                  <Text style={styles.roleText}>{userRole.toUpperCase()}</Text>
                 </View>
               </View>
             </View>
 
-            {/* Staff Shortcuts */}
             {isStaff && (
               <>
-                <Link href="/(admin)/dashboard" asChild>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="apps-outline" size={22} color="#00ffff" />
-                    <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Panel Admin</Text>
-                  </TouchableOpacity>
-                </Link>
-                <Link href="/(admin)/qr-scanner" asChild>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="scan-outline" size={22} color="#00ffaa" />
-                    <Text style={[styles.menuItemText, { color: '#00ffaa' }]}>Escanear QR</Text>
-                  </TouchableOpacity>
-                </Link>
-                <Link href="/(admin)/comandas" asChild>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="fast-food-outline" size={22} color="#ffff00" />
-                    <Text style={[styles.menuItemText, { color: '#ffff00' }]}>Comandas</Text>
-                  </TouchableOpacity>
-                </Link>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/dashboard')}>
+                  <Ionicons name="apps-outline" size={22} color="#00ffff" />
+                  <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Panel Admin</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/qr-scanner')}>
+                  <Ionicons name="scan-outline" size={22} color="#00ffaa" />
+                  <Text style={[styles.menuItemText, { color: '#00ffaa' }]}>Escanear QR</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/products')}>
+                  <Ionicons name="cube-outline" size={22} color="#ff00ff" />
+                  <Text style={[styles.menuItemText, { color: '#ff00ff' }]}>Productos</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/tables')}>
+                  <Ionicons name="grid-outline" size={22} color="#FAD02C" />
+                  <Text style={[styles.menuItemText, { color: '#FAD02C' }]}>Mesas</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/orders-screen')}>
+                  <Ionicons name="list-outline" size={22} color="#FF6B9D" />
+                  <Text style={[styles.menuItemText, { color: '#FF6B9D' }]}>Todas las Órdenes</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/comandas')}>
+                  <Ionicons name="fast-food-outline" size={22} color="#ffff00" />
+                  <Text style={[styles.menuItemText, { color: '#ffff00' }]}>Comandas Cocina</Text>
+                </TouchableOpacity>
                 <View style={styles.menuDivider} />
               </>
             )}
 
-            <Link href="/(user)/orders" asChild>
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="receipt-outline" size={22} color="#ffaa00" />
-                <Text style={[styles.menuItemText, { color: '#ffaa00' }]}>Mis Órdenes</Text>
-              </TouchableOpacity>
-            </Link>
-            <Link href="/(user)/my-qr" asChild>
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="qr-code-outline" size={22} color="#00ffff" />
-                <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Mis QRs</Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(user)/my-tickets')}>
+              <Ionicons name="receipt-outline" size={22} color="#ffaa00" />
+              <Text style={[styles.menuItemText, { color: '#ffaa00' }]}>Mis Entradas</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(user)/my-qr')}>
+              <Ionicons name="qr-code-outline" size={22} color="#00ffff" />
+              <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Mis QRs</Text>
+            </TouchableOpacity>
 
             <View style={styles.menuDivider} />
 
@@ -160,31 +206,45 @@ export default function Home() {
           </Animated.View>
         )}
 
-        {/* ===  ACCESOS RÁPIDOS  === */}
-        {user && (
-          <View style={styles.quickAccessContainer}>
-            <Link href="/(user)/my-qr" asChild>
-              <TouchableOpacity style={styles.quickAccessButton}>
-                <LinearGradient colors={['#00ffaa', '#00aa77']} style={styles.quickAccessGradient}>
-                  <Ionicons name="qr-code-outline" size={24} color="#003322" />
-                  <Text style={styles.quickAccessText}>Mis QRs Activos</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Link>
+        {/* ===  MAIN ACTIONS (CARTA VS QRS)  === */}
+        <View style={styles.quickAccessContainer}>
+          {/* Button 1: CARTA DIGITAL (Scrolls to Menu) */}
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={() => {
+              setFilter('all');
+              scrollRef.current?.scrollTo({ y: menuY, animated: true });
+            }}
+          >
+            <LinearGradient colors={['#aa00ff', '#7700aa']} style={styles.quickAccessGradient}>
+              <Ionicons name="restaurant-outline" size={24} color="#fff" />
+              <Text style={[styles.quickAccessText, { color: '#fff' }]}>CARTA DIGITAL</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-            <Link href="/(user)/orders" asChild>
-              <TouchableOpacity style={styles.quickAccessButton}>
-                <LinearGradient colors={['#aa00ff', '#7700aa']} style={styles.quickAccessGradient}>
-                  <Ionicons name="receipt-outline" size={24} color="#fff" />
-                  <Text style={[styles.quickAccessText, { color: '#fff' }]}>Mis Consumos</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        )}
+          {/* Button 2: MIS QRS / CONSUMOS (Auth required) */}
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={() => {
+              if (user) {
+                router.push('/(user)/my-qr');
+              } else {
+                openLogin();
+              }
+            }}
+          >
+            <LinearGradient colors={['#00ffaa', '#00aa77']} style={styles.quickAccessGradient}>
+              <Ionicons name="qr-code-outline" size={24} color="#003322" />
+              <Text style={styles.quickAccessText}>MIS QRS</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
         {/* === FILTROS DE LA CARTA === */}
-        <View style={styles.filterSection}>
+        <View
+          style={styles.filterSection}
+          onLayout={(e) => setMenuY(e.nativeEvent.layout.y)}
+        >
           <Text style={styles.sectionTitle}>CARTA DIGITAL</Text>
           <View style={styles.filterContainer}>
             <FilterButton label="Todo" active={filter === 'all'} onPress={() => setFilter('all')} color="#8B5CF6" />
@@ -217,7 +277,7 @@ export default function Home() {
       <Link href="/(user)/cart" asChild>
         <TouchableOpacity style={styles.fab}>
           <LinearGradient colors={['#aa00ff', '#ff00aa']} style={styles.fabGradient}>
-            <Ionicons name="cart" size={28} color="#fff" />
+            <Ionicons name="qr-code-outline" size={28} color="#fff" />
             {cartCount > 0 && (
               <View style={styles.fabBadge}>
                 <Text style={styles.fabBadgeText}>{cartCount}</Text>
@@ -344,11 +404,24 @@ const styles = StyleSheet.create({
     maxWidth: 900,
   },
   logoGlow: {
-    padding: 10,
-    borderRadius: 50,
-    backgroundColor: 'rgba(170, 0, 255, 0.1)',
+    width: isMobile ? 72 : 88,
+    height: isMobile ? 72 : 88,
+    borderRadius: 999,
+    backgroundColor: 'rgba(170, 0, 255, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#aa00ff',
+    shadowOpacity: 0.7,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
   },
-  logo: { width: 80, height: 40 },
+  logo: {
+    width: '70%',
+    height: '70%',
+    borderRadius: 999,
+    resizeMode: 'contain',
+  },
   userButton: {},
   avatar: {
     width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff'

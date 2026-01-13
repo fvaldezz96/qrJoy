@@ -28,16 +28,26 @@ export default function QrScanner() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [lastOrder, setLastOrder] = useState<
     | {
-        id: string;
-        total: number;
-        status: string;
-        items: { productId: string; name: string; qty: number; price: number; subtotal: number }[];
-      }
+      id: string;
+      total: number;
+      status: string;
+      items: { productId: string; name: string; qty: number; price: number; subtotal: number }[];
+    }
     | null
   >(null);
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth);
-  const isStaff = user?.role === 'admin' || user?.role === 'employee';
+
+  // Helper to extract role safely (handles string or object from population)
+  const getRoleName = (u: typeof user) => {
+    if (!u || !u.role) return 'guest';
+    if (typeof u.role === 'string') return u.role;
+    // @ts-ignore - Handle populated role object
+    return u.role.type || u.role.name || 'guest';
+  };
+
+  const userRole = getRoleName(user);
+  const isStaff = userRole === 'admin' || userRole === 'employee';
 
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
