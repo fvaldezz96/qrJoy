@@ -16,7 +16,7 @@
     "lint:fix": "npx expo lint --fix",
     "build": "tsc && npm run build:web",
     "build:web": "npx expo export -p web",
-    "start:prod": "node server.js"
+    "start:prod": "npx serve dist --single --listen tcp://0.0.0.0:$PORT"
   },
   "expo": {
     "install": {
@@ -54,7 +54,6 @@
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
     "expo-web-browser": "~15.0.10",
-    "express": "^5.2.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
