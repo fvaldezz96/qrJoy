@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import cors from 'cors';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,20 +10,50 @@ const app = express();
 const DIST_DIR = path.join(__dirname, 'dist');
 const HTML_FILE = path.join(DIST_DIR, 'index.html');
 
-// Enable CORS for good measure
-app.use(cors());
+console.log('--- SERVER STARTUP ---');
+console.log(`DIST_DIR: ${DIST_DIR}`);
 
-// Serve static files from dist
+// 🔍 Verify dist folder exists
+try {
+    if (fs.existsSync(DIST_DIR)) {
+        console.log('✅ DIST_DIR exists');
+        const files = fs.readdirSync(DIST_DIR);
+        console.log('📄 Files in dist:', files);
+    } else {
+        console.error('❌ DIST_DIR does NOT exist!');
+    }
+} catch (error) {
+    console.error('❌ Error checking DIST_DIR:', error);
+}
+
+// 📝 Request Logger
+app.use((req, res, next) => {
+    console.log(`[REQUEST] ${req.method} ${req.url}`);
+    next();
+});
+
+// 💓 Health Check
+app.get('/health', (req, res) => {
+    console.log('💓 Health check passed');
+    res.send('OK');
+});
+
+// Serve static
 app.use(express.static(DIST_DIR));
 
-// Support for client-side routing (SPA)
-// Use regex matching to avoid "Missing parameter name" error in newer express/router versions
-app.get(/^(?!\/api).+/, (req, res) => {
-    res.sendFile(HTML_FILE);
+// 🔄 SPA Fallback (Catch All)
+// Use a simple middleware at the end instead of regex
+app.use((req, res) => {
+    if (req.method === 'GET') {
+        console.log(`🔄 Fallback: Serving index.html for ${req.url}`);
+        res.sendFile(HTML_FILE);
+    } else {
+        res.status(404).send('Not Found');
+    }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Serving content from ${DIST_DIR}`);
+// Note: Omitting host argument to allow default binding (IPv4/IPv6 dual stack support)
+app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port ${PORT}`);
 });
