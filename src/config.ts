@@ -42,10 +42,10 @@ export const AUTH_CONFIG = {
   refreshThreshold: 300000 // 5 minutos antes de expirar
 };
 
-// 🚫 KEYCLOAK ELIMINADO - Variables mantenidas para compatibilidad
-export const KEYCLOAK_TOKEN_URL = '';
-export const KEYCLOAK_ISSUER = '';
-export const KEYCLOAK_CLIENT_ID = '';
+// // 🚫 KEYCLOAK ELIMINADO - Variables mantenidas para compatibilidad
+// export const KEYCLOAK_TOKEN_URL = '';
+// export const KEYCLOAK_ISSUER = '';
+// export const KEYCLOAK_CLIENT_ID = '';
 
 // 🌐 CONFIGURACIÓN DE ENTORNOS
 export const ENV_CONFIG = {

@@ -79,21 +79,21 @@ export const loginThunk = createAsyncThunk(
 // ✅ Login usando un access_token emitido por Keycloak / IdP compartido
 // Este thunk asume que ya obtuviste un token válido del IdP (por ejemplo vía redirección OAuth)
 // y simplemente lo guarda y llama a /auth/me-idp para sincronizar el usuario y sus roles.
-export const loginWithKeycloakTokenThunk = createAsyncThunk(
-  'auth/loginWithKeycloakToken',
-  async (token: string) => {
-    const cleanToken = sanitize(token);
-    if (!cleanToken) throw new Error('Token vacío');
+// export const loginWithKeycloakTokenThunk = createAsyncThunk(
+//   'auth/loginWithKeycloakToken',
+//   async (token: string) => {
+//     const cleanToken = sanitize(token);
+//     if (!cleanToken) throw new Error('Token vacío');
 
-    await saveToken(cleanToken);
-    setAuthToken(cleanToken);
+//     await saveToken(cleanToken);
+//     setAuthToken(cleanToken);
 
-    const { data } = await api.get('/auth/me-idp');
-    const user = data.data as User;
+//     const { data } = await api.get('/auth/me-idp');
+//     const user = data.data as User;
 
-    return { token: cleanToken, user };
-  },
-);
+//     return { token: cleanToken, user };
+//   },
+// );
 
 // 🚫 KEYCLOAK ELIMINADO - Login directo con JWT
 // export const loginWithKeycloakCredentialsThunk = createAsyncThunk(
