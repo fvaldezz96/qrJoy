@@ -5,7 +5,7 @@ const isDocker = process.env.EXPO_PUBLIC_DOCKER === 'true';
 // URLs dinámicas según entorno - HARDCODEADAS para producción
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || (
   isProduction
-    ? 'https://qrjoy-api-production.up.railway.app'
+    ? 'https://qjoy-api-production.up.railway.app'
     : isDocker
       ? process.env.EXPO_PUBLIC_DOCKER_API_URL || 'http://localhost:3002'
       : process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3002'

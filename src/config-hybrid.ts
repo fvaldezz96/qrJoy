@@ -11,7 +11,7 @@ const LOCAL_PC_IP = Platform.OS === 'web' ? 'localhost' : '10.0.2.2';
 const LOCAL_PORT = '3002';
 
 // 🌐 URLs de Producción en Railway - HARDCODEADAS
-const PRODUCTION_API_URL = 'https://qrjoy-api-production.up.railway.app';
+const PRODUCTION_API_URL = 'https://qjoy-api-production.up.railway.app';
 const PRODUCTION_SYSTEM_A_URL = 'https://product-api-production-b9c7.up.railway.app';
 
 // 🔍 Detectar ambiente y conexión
