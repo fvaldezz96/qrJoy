@@ -12,7 +12,7 @@ const LOCAL_PORT = '3002';
 
 // 🌐 URLs de Producción en Railway - HARDCODEADAS
 const PRODUCTION_API_URL = 'https://qrjoy-api-production.up.railway.app';
-const PRODUCTION_KEYCLOAK_URL = 'https://kcloud-keycloak-production.up.railway.app';
+const PRODUCTION_SYSTEM_A_URL = 'https://product-api-production-b9c7.up.railway.app';
 
 // 🔍 Detectar ambiente y conexión
 const isDev = Constants.expoConfig?.extra?.EAS_ENV === 'development';
@@ -88,36 +88,22 @@ export const SYNC_CONFIG = {
   backupEndpoint: '/backup'
 };
 
-// 🔐 Configuración de Keycloak
-const getKeycloakUrls = () => {
-  if (urls.environment === 'local') {
-    return {
-      tokenUrl: `http://${LOCAL_PC_IP}:8080/realms/joywine/protocol/openid-connect/token`,
-      issuer: `http://${LOCAL_PC_IP}:8080/realms/joywine`,
-    };
-  }
-
-  return {
-    tokenUrl: `${PRODUCTION_KEYCLOAK_URL}/realms/joywine/protocol/openid-connect/token`,
-    issuer: `${PRODUCTION_KEYCLOAK_URL}/realms/joywine`,
-  };
+// 🔐 Configuración de Autenticación (JWT Directo - SIN KEYCLOAK)
+export const AUTH_CONFIG = {
+  method: 'jwt',
+  tokenStorageKey: 'auth_token',
+  refreshTokenKey: 'refresh_token',
 };
-
-const keycloakUrls = getKeycloakUrls();
-
-export const KEYCLOAK_TOKEN_URL = keycloakUrls.tokenUrl;
-export const KEYCLOAK_ISSUER = keycloakUrls.issuer;
-export const KEYCLOAK_CLIENT_ID = process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID || 'joy-api';
 
 export const APP_NAME = 'JoyPark';
 export const APP_VERSION = '1.0.0';
 
 // 📱 Información de depuración
-console.log('🌐 CONFIGURACIÓN HÍBRIDA QR FRONT ACTIVADA');
+console.log('🌐 CONFIGURACIÓN HÍBRIDA QR FRONT ACTIVADA (SIN KEYCLOAK)');
 console.log(`📍 Ambiente: ${ENVIRONMENT}`);
 console.log(`🔗 API URL: ${API_BASE_URL}`);
 console.log(`📡 Data Source: ${DATA_SOURCE}`);
-console.log(`🔐 Keycloak: ${KEYCLOAK_ISSUER}`);
+console.log(`🔐 Auth Method: Direct JWT`);
 console.log(`🔄 Sync Interval: ${SYNC_CONFIG.syncInterval}ms`);
 
 // 🔧 Funciones helper
@@ -235,8 +221,6 @@ export default {
   ENVIRONMENT,
   DATA_SOURCE,
   SYNC_CONFIG,
-  KEYCLOAK_TOKEN_URL,
-  KEYCLOAK_ISSUER,
-  KEYCLOAK_CLIENT_ID,
+  AUTH_CONFIG,
   ENDPOINTS,
 };
