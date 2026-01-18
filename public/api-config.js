@@ -17,8 +17,8 @@ class APIConfig {
     } else {
       console.log('🚀 Modo producción detectado');
       this.apis = {
-        product: 'https://product-api-production-b9c7.up.railway.app',
-        qr: 'https://qrjoy-api-production.up.railway.app',
+        product: 'https://ideal-motivation-production.up.railway.app',
+        qr: 'https://spectacular-smile-production.up.railway.app',
         productFront: 'https://gracious-balance-production.up.railway.app',
         qrFront: 'https://qrjoy-production-58c3.up.railway.app'
       };

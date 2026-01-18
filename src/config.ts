@@ -5,7 +5,7 @@ const isDocker = process.env.EXPO_PUBLIC_DOCKER === 'true';
 // URLs dinámicas según entorno - HARDCODEADAS para producción
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || (
   isProduction
-    ? 'https://qrjoy-api-production.up.railway.app'
+    ? 'https://spectacular-smile-production.up.railway.app'
     : isDocker
       ? process.env.EXPO_PUBLIC_DOCKER_API_URL || 'http://localhost:3002'
       : process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3002'
@@ -13,7 +13,7 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || (
 
 export const SYSTEM_A_API_URL = process.env.EXPO_PUBLIC_SYSTEM_A_API_URL || (
   isProduction
-    ? 'https://product-api-production-b9c7.up.railway.app'
+    ? 'https://ideal-motivation-production.up.railway.app'
     : isDocker
       ? process.env.EXPO_PUBLIC_DOCKER_SYSTEM_A_URL || 'http://localhost:3000'
       : process.env.EXPO_PUBLIC_LOCAL_SYSTEM_A_URL || 'http://localhost:3000'

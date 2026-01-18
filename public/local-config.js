@@ -3,10 +3,10 @@ const isProduction = window.location.hostname.includes('railway.app');
 
 if (isProduction) {
   console.log('🚀 Configuración de producción Railway');
-  window.EXPO_PUBLIC_API_BASE_URL = 'https://qrjoy-api-production.up.railway.app';
-  window.EXPO_PUBLIC_SYSTEM_B_API_URL = 'https://qrjoy-api-production.up.railway.app';
-  window.EXPO_PUBLIC_QR_API_URL = 'https://qrjoy-api-production.up.railway.app';
-  window.EXPO_PUBLIC_HOST_API = 'https://product-api-production-b9c7.up.railway.app';
+  window.EXPO_PUBLIC_API_BASE_URL = 'https://spectacular-smile-production.up.railway.app';
+  window.EXPO_PUBLIC_SYSTEM_B_API_URL = 'https://spectacular-smile-production.up.railway.app';
+  window.EXPO_PUBLIC_QR_API_URL = 'https://spectacular-smile-production.up.railway.app';
+  window.EXPO_PUBLIC_HOST_API = 'https://ideal-motivation-production.up.railway.app';
 } else if (window.location.hostname === 'localhost') {
   console.log('🏠 Forzando configuración local');
 
@@ -25,7 +25,7 @@ if (isProduction) {
       console.log('🔄 Redirigiendo a local:', url);
     }
     if (url.includes('qrjoy-api-production.up.railway.app')) {
-      url = url.replace('https://qrjoy-api-production.up.railway.app', 'http://localhost:3001');
+      url = url.replace('https://spectacular-smile-production.up.railway.app', 'http://localhost:3001');
       console.log('🔄 Redirigiendo QR a local:', url);
     }
 
