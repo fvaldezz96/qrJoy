@@ -61,14 +61,14 @@ export const createOrder = createAsyncThunk(
 
     if (!items) {
       items = st.cart.items.map((i) => ({
-        productId: i.product._id,
+        product: i.product._id,
         qty: i.qty,
         price: i.product.price,
       }));
     } else {
       // Ensure format if passing from local state
       items = items.map(i => ({
-        productId: i.product._id,
+        product: i.product._id,
         qty: i.quantity || i.qty,
         price: i.price
       }));
@@ -131,12 +131,62 @@ export const getAllOrders = createAsyncThunk('orders/getAll', async () => {
   }
 });
 
+export const closeOrder = createAsyncThunk(
+  'orders/close',
+  async (orderId: string) => {
+    try {
+      const { data } = await api.post(`/tickets/${orderId}/close`);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error closing order:', error);
+      throw new Error(error.response?.data?.error?.message || error.response?.data?.message || 'Error closing order');
+    }
+  }
+);
+
+export const fetchMyOrders = createAsyncThunk('orders/fetchMy', async () => {
+  try {
+    const { data } = await api.get('/orders/my');
+    return data.data.orders as Order[];
+  } catch (error: any) {
+    console.error('Error fetching my orders:', error);
+    throw new Error(error.response?.data?.message || 'Error fetching my orders');
+  }
+});
+
+export const payCashOrder = createAsyncThunk(
+  'orders/payCash',
+  async (orderId: string) => {
+    try {
+      const { data } = await api.post(`/orders/${orderId}/pay-cash`);
+      return data.data as OrderPayResponse;
+    } catch (error: any) {
+      console.error('Error paying cash order:', error);
+      throw new Error(error.response?.data?.message || 'Error paying cash order');
+    }
+  }
+);
+
+export const cancelOrder = createAsyncThunk(
+  'orders/cancel',
+  async (orderId: string) => {
+    try {
+      const { data } = await api.post(`/orders/${orderId}/cancel`);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      throw new Error(error.response?.data?.message || 'Error cancelling order');
+    }
+  }
+);
+
 const slice = createSlice({
   name: 'orders',
   initialState: {
     currentOrderId: null as string | null,
     qr: null as OrderPayResponse | null,
     orders: [] as Order[],
+    myOrders: [] as Order[],
     ordersMeta: {
       total: 0,
       page: 1,
@@ -153,34 +203,49 @@ const slice = createSlice({
     },
     clearOrders(s) {
       s.orders = [];
+      s.myOrders = [];
       s.ordersMeta = { total: 0, page: 1, limit: 10 };
     },
     // Acciones de WebSocket en tiempo real
     orderCreatedRealtime(s, a: PayloadAction<Order>) {
-      // Agregar nueva orden al inicio de la lista
+      // Si soy el dueño o soy staff, actualizar según corresponda
+      // Por ahora actualizamos la lista general
       s.orders.unshift(a.payload);
       s.ordersMeta.total += 1;
     },
     orderUpdatedRealtime(s, a: PayloadAction<Order>) {
-      // Actualizar orden existente
-      const index = s.orders.findIndex(order => order._id === a.payload._id);
-      if (index !== -1) {
-        s.orders[index] = a.payload;
-      }
+      const idx = s.orders.findIndex(o => o._id === a.payload._id);
+      if (idx !== -1) s.orders[idx] = a.payload;
+
+      const myIdx = s.myOrders.findIndex(o => o._id === a.payload._id);
+      if (myIdx !== -1) s.myOrders[myIdx] = a.payload;
     },
     orderStatusChangedRealtime(s, a: PayloadAction<{ orderId: string; status: string; updatedAt?: string }>) {
-      // Actualizar solo el status de la orden
-      const index = s.orders.findIndex(order => order._id === a.payload.orderId);
+      const idx = s.orders.findIndex(o => o._id === a.payload.orderId);
+      if (idx !== -1) {
+        s.orders[idx].status = a.payload.status;
+        if (a.payload.updatedAt) s.orders[idx].updatedAt = a.payload.updatedAt;
+      }
+
+      const myIdx = s.myOrders.findIndex(o => o._id === a.payload.orderId);
+      if (myIdx !== -1) {
+        s.myOrders[myIdx].status = a.payload.status;
+        if (a.payload.updatedAt) s.myOrders[myIdx].updatedAt = a.payload.updatedAt;
+      }
+    },
+    updateOrderStatusLocal(s, a: PayloadAction<{ orderId: string; status: string }>) {
+      const index = s.orders.findIndex(o => o._id === a.payload.orderId);
       if (index !== -1) {
         s.orders[index].status = a.payload.status;
-        if (a.payload.updatedAt) {
-          s.orders[index].updatedAt = a.payload.updatedAt;
-        }
+      }
+      const myIdx = s.myOrders.findIndex(o => o._id === a.payload.orderId);
+      if (myIdx !== -1) {
+        s.myOrders[myIdx].status = a.payload.status;
       }
     },
     orderDeletedRealtime(s, a: PayloadAction<{ orderId: string }>) {
-      // Remover orden de la lista
       s.orders = s.orders.filter(order => order._id !== a.payload.orderId);
+      s.myOrders = s.myOrders.filter(order => order._id !== a.payload.orderId);
       s.ordersMeta.total = Math.max(0, s.ordersMeta.total - 1);
     },
   },
@@ -193,6 +258,17 @@ const slice = createSlice({
         s.currentOrderId = a.payload;
       })
       .addCase(createOrder.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
+      })
+      .addCase(fetchMyOrders.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(fetchMyOrders.fulfilled, (s, a) => {
+        s.loading = false;
+        s.myOrders = a.payload;
+      })
+      .addCase(fetchMyOrders.rejected, (s, a) => {
         s.loading = false;
         s.error = a.error.message;
       })
@@ -228,6 +304,23 @@ const slice = createSlice({
         s.loading = false;
         s.error = a.error.message;
       })
+      .addCase(payCashOrder.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(payCashOrder.fulfilled, (s, a) => {
+        s.loading = false;
+        // Marcar como pagada localmente
+        const index = s.orders.findIndex(o => o._id === a.payload.orderId);
+        if (index !== -1) {
+          s.orders[index].status = 'paid';
+        }
+        // Guardar QR/respuesta por si queremos mostrarlo
+        s.qr = a.payload;
+      })
+      .addCase(payCashOrder.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
+      })
       .addCase(getAllOrders.pending, (s) => {
         s.loadingOrders = true;
         s.error = undefined;
@@ -243,6 +336,36 @@ const slice = createSlice({
       })
       .addCase(getAllOrders.rejected, (s, a) => {
         s.loadingOrders = false;
+        s.error = a.error.message;
+      })
+      .addCase(closeOrder.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(closeOrder.fulfilled, (s, a) => {
+        s.loading = false;
+        // The endpoint returns data: { orderId, orderStatus, ... }
+        const { orderId, orderStatus } = a.payload;
+        const index = s.orders.findIndex(o => o._id === orderId);
+        if (index !== -1) {
+          s.orders[index].status = orderStatus;
+        }
+      })
+      .addCase(closeOrder.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
+      })
+      .addCase(cancelOrder.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(cancelOrder.fulfilled, (s, a) => {
+        s.loading = false;
+        const index = s.orders.findIndex(o => o._id === a.payload._id);
+        if (index !== -1) {
+          s.orders[index].status = 'cancelled';
+        }
+      })
+      .addCase(cancelOrder.rejected, (s, a) => {
+        s.loading = false;
         s.error = a.error.message;
       });
   },

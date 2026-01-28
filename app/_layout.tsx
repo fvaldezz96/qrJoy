@@ -10,6 +10,8 @@ import { store, persistor } from '../src/store';
 import { useAppSelector } from '../src/hook';
 import { setAuthToken } from '../src/api/setAuthToken';
 import type { RootState } from '../src/store';
+import AnimatedSplashScreen from '../src/components/AnimatedSplashScreen';
+import LoaderGif from '../src/components/LoaderGif';
 
 function AuthBootstrapper() {
   const token = useAppSelector((s: RootState) => s.auth.token);
@@ -25,14 +27,16 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <Provider store={store}>
-        <PersistGate 
+        <PersistGate
           loading={
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator size="large" />
             </View>
-          } 
+          }
           persistor={persistor}
         >
+          <AnimatedSplashScreen />
+          <LoaderGif />
           <AuthBootstrapper />
           <Toast />
         </PersistGate>

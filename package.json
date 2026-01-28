@@ -53,6 +53,7 @@
     "expo-linking": "8.0.8",
     "expo-router": "^6.0.21",
     "expo-secure-store": "~13.0.2",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~1.12.1",
     "expo-web-browser": "~15.0.10",
     "express": "^5.2.1",

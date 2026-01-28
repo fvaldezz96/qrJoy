@@ -48,12 +48,14 @@ interface TicketsState {
   loading: boolean;
   error: string | null;
   lastFetched: number;
+  receipts: any[];
 }
 
 const initialState = ticketsAdapter.getInitialState<TicketsState>({
   loading: false,
   error: null,
   lastFetched: 0,
+  receipts: [],
 });
 
 // === THUNKS ===
@@ -99,6 +101,16 @@ export const purchaseTickets = createAsyncThunk<
   return data.data.purchase as PurchaseResponse;
 });
 
+/** TRAE LOS RECIBOS DE PEDIDOS DEL USUARIO */
+export const fetchUserReceipts = createAsyncThunk(
+  'entranceTickets/fetchReceipts',
+  async () => {
+    const { data } = await api.get('/tickets/me');
+    // The endpoint returns { ok: true, data: Ticket[] }
+    return data.data;
+  }
+);
+
 // === SLICE ===
 const entranceTicketsSlice = createSlice({
   name: 'entranceTickets',
@@ -139,6 +151,17 @@ const entranceTicketsSlice = createSlice({
       })
       .addCase(purchaseTickets.rejected, (state, action) => {
         state.error = action.error.message || 'Error al comprar';
+      })
+      .addCase(fetchUserReceipts.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUserReceipts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.receipts = action.payload;
+      })
+      .addCase(fetchUserReceipts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Error al cargar recibos';
       });
   },
 });

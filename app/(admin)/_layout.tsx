@@ -20,9 +20,9 @@ export default function AdminLayout() {
   const isStaff = userRole === 'admin' || userRole === 'employee';
 
   useEffect(() => {
-    console.log('[AdminLayout] User:', user?.email, 'Role:', userRole, 'IsStaff:', isStaff);
+    console.log('[AdminLayout] Mounting... User:', user?.email, 'Role:', userRole, 'IsStaff:', isStaff);
     if (user && !isStaff) {
-      console.log('[AdminLayout] Redirecting non-staff user to home');
+      console.warn('[AdminLayout] ALERT: Redirecting non-staff user to home. Role was:', userRole);
       router.replace('/');
     }
   }, [user, isStaff, router, userRole]);

@@ -15,20 +15,20 @@ class SocketService {
     ORDER_UPDATED: 'order:updated',
     ORDER_DELETED: 'order:deleted',
     ORDER_STATUS_CHANGED: 'order:status_changed',
-    
+
     // Comandas
     COMANDA_CREATED: 'comanda:created',
     COMANDA_UPDATED: 'comanda:updated',
     COMANDA_STATUS_CHANGED: 'comanda:status_changed',
-    
+
     // Mesas
     TABLE_UPDATED: 'table:updated',
     TABLE_OCCUPIED: 'table:occupied',
     TABLE_FREED: 'table:freed',
-    
+
     // Tickets de entrada
     ENTRANCE_TICKET_PURCHASED: 'entrance_ticket:purchased',
-    
+
     // Conexión
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
@@ -44,7 +44,7 @@ class SocketService {
       try {
         // Configuración del socket
         const socketUrl = API_BASE_URL.replace(/^http/, 'ws');
-        
+
         this.socket = io(socketUrl, {
           transports: ['websocket', 'polling'],
           timeout: 10000,
@@ -166,10 +166,10 @@ class SocketService {
     this.on(this.events.ORDER_CREATED, callback);
     this.on(this.events.ORDER_UPDATED, callback);
     this.on(this.events.ORDER_STATUS_CHANGED, callback);
-    
+
     // Unirse a la sala de órdenes (para empleados)
     this.joinRoom('orders');
-    
+
     // Función de cleanup
     return () => {
       this.off(this.events.ORDER_CREATED, callback);
@@ -186,10 +186,10 @@ class SocketService {
     this.on(this.events.COMANDA_CREATED, callback);
     this.on(this.events.COMANDA_UPDATED, callback);
     this.on(this.events.COMANDA_STATUS_CHANGED, callback);
-    
+
     // Unirse a la sala de comandas (para cocina/bar)
     this.joinRoom('comandas');
-    
+
     // Función de cleanup
     return () => {
       this.off(this.events.COMANDA_CREATED, callback);
@@ -206,10 +206,10 @@ class SocketService {
     this.on(this.events.TABLE_UPDATED, callback);
     this.on(this.events.TABLE_OCCUPIED, callback);
     this.on(this.events.TABLE_FREED, callback);
-    
+
     // Unirse a la sala de mesas
     this.joinRoom('tables');
-    
+
     // Función de cleanup
     return () => {
       this.off(this.events.TABLE_UPDATED, callback);
@@ -232,6 +232,19 @@ class SocketService {
     return () => {
       this.off(this.events.ENTRANCE_TICKET_PURCHASED, callback);
       this.leaveRoom('entrance-tickets');
+    };
+  }
+
+  /**
+   * Suscribirse a actualizaciones de mis órdenes (usuario)
+   */
+  subscribeToMyOrders(userId: string, callback: (data: any) => void): () => void {
+    this.on(this.events.ORDER_STATUS_CHANGED, callback);
+    this.joinRoom(`user_${userId}`);
+
+    return () => {
+      this.off(this.events.ORDER_STATUS_CHANGED, callback);
+      this.leaveRoom(`user_${userId}`);
     };
   }
 }

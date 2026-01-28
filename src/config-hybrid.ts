@@ -40,7 +40,7 @@ const getApiUrls = () => {
     };
   }
 
-  // En desarrollo: intentar local primero, fallback a producción
+  // En desarrollo: intentar local siempre, fallback a producción solo si no es local
   if (localUrl) {
     return {
       apiUrl: localUrl,
@@ -49,7 +49,7 @@ const getApiUrls = () => {
     };
   }
 
-  // Fallback a producción si no hay local
+  // Fallback a producción si no hay local Y estamos forzando producción
   return {
     apiUrl: PRODUCTION_API_URL,
     environment: 'production_fallback',

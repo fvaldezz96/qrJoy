@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Platform,
@@ -15,9 +16,10 @@ import {
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
 import { useOrdersRealtime } from '../../src/hook/useWebSocket';
-import { getAllOrders, type Order } from '../../src/store/slices/ordersSlice';
+import { getAllOrders, type Order, closeOrder } from '../../src/store/slices/ordersSlice';
 import { selectTables, type Table } from '../../src/store/slices/tablesSlice';
 import { fetchTables, selectActiveTables } from '../../src/store/slices/tablesSlice';
+import { showAlert } from '../../src/utils/showAlert';
 
 // === INTERFAZ DE ITEM ===
 interface OrderItem {
@@ -164,6 +166,70 @@ function AnimatedOrderCard({ item, tableNumber }: { item: Order; tableNumber?: n
               ))
             ) : (
               <Text style={styles.emptyItems}>Sin productos</Text>
+            )}
+          </View>
+
+          {/* Acciones */}
+          <View style={styles.actionsContainer}>
+            {/* Botón Cerrar y Emitir Ticket (Solo si está pagada o lista) */}
+            {(item.status === 'paid' || item.status === 'ready') && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={async () => {
+                  try {
+                    await dispatch(closeOrder(item._id)).unwrap();
+                    showAlert('Éxito', 'Orden cerrada y ticket emitido correctamente.');
+                  } catch (e: any) {
+                    showAlert('Error', e.message || 'No se pudo cerrar la orden.');
+                  }
+                }}
+              >
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.actionGradient}
+                >
+                  <Ionicons name="receipt" size={18} color="#fff" />
+                  <Text style={styles.actionButtonText}>Cerrar y Emitir Ticket</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+
+            {/* Botón Cancelar (Disponible si no está servida ni cancelada) */}
+            {item.status !== 'served' && item.status !== 'cancelled' && (
+              <TouchableOpacity
+                style={[styles.actionButton, { marginTop: (item.status === 'paid' || item.status === 'ready') ? 10 : 0 }]}
+                onPress={async () => {
+                  Alert.alert(
+                    'Cancelar Orden',
+                    '¿Estás seguro de que deseas cancelar esta orden? El stock será devuelto y la mesa liberada.',
+                    [
+                      { text: 'No, mantener', style: 'cancel' },
+                      {
+                        text: 'Sí, cancelar',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            // Importante: No tenía el thunk cancelOrder importado en el componente todavía
+                            const { cancelOrder } = await import('../../src/store/slices/ordersSlice');
+                            await dispatch(cancelOrder(item._id)).unwrap();
+                            showAlert('Cancelada', 'La orden ha sido cancelada.');
+                          } catch (e: any) {
+                            showAlert('Error', e.message || 'No se pudo cancelar.');
+                          }
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <LinearGradient
+                  colors={['#E53170', '#BE185D']}
+                  style={styles.actionGradient}
+                >
+                  <Ionicons name="close-circle" size={18} color="#fff" />
+                  <Text style={styles.actionButtonText}>Cancelar Orden</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -450,5 +516,26 @@ const styles = StyleSheet.create({
   statusBorder: {
     height: 6,
     width: '100%',
+  },
+  actionsContainer: {
+    marginTop: 16,
+    gap: 10,
+  },
+  actionButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 4,
+  },
+  actionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });

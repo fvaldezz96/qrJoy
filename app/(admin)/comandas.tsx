@@ -78,7 +78,7 @@ function ComandaCard({ comanda, onUpdate }: { comanda: Comanda; onUpdate: (statu
             <Text style={styles.cardSub}>Mesa: {comanda.tableNumber}</Text>
           )}
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: cfg.color + '22' }] }>
+        <View style={[styles.statusBadge, { backgroundColor: cfg.color + '22' }]}>
           <Ionicons name={cfg.icon} size={16} color={cfg.color} />
           <Text style={[styles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
         </View>
@@ -92,7 +92,7 @@ function ComandaCard({ comanda, onUpdate }: { comanda: Comanda; onUpdate: (statu
         {comanda.items.map((item, idx) => (
           <View key={idx} style={styles.itemRow}>
             <Text style={styles.itemText}>
-              {item.qty}× {item.productId?.slice(-4) ?? 'Producto'}
+              {item.qty}× {(item.productId as any)?.name || 'Producto'}
             </Text>
             {item.note ? <Text style={styles.itemNote}>{item.note}</Text> : null}
           </View>

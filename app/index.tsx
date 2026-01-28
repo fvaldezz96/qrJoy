@@ -63,6 +63,7 @@ export default function Home() {
   const [filter, setFilter] = useState<'all' | 'drink' | 'food'>('all');
   const [menuY, setMenuY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const menuAnim = useRef(new Animated.Value(0)).current;
 
   // Load Products
   useEffect(() => {
@@ -70,42 +71,64 @@ export default function Home() {
   }, [dispatch]);
 
   const filteredProducts = products
-    .filter((p) => p.category !== 'ticket')
     .filter((p) => filter === 'all' || p.category === filter);
 
-  console.log('[Home] Products loaded:', products.length, 'Filtered:', filteredProducts.length, 'Filter:', filter);
+  const toggleMenu = () => {
+    if (menuVisible) {
+      Animated.timing(menuAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setMenuVisible(false));
+    } else {
+      setMenuVisible(true);
+      Animated.spring(menuAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
+  const closeMenu = () => {
+    if (!menuVisible) return;
+    Animated.timing(menuAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => setMenuVisible(false));
+  };
 
   const handleLogout = () => {
     dispatch(logout());
-    setMenuVisible(false);
+    closeMenu();
     Toast.show({ type: 'info', text1: 'Hasta pronto' });
   };
 
-  const toggleMenu = () => setMenuVisible(!menuVisible);
   const openLogin = () => {
     setModalVisible(true);
-    setMenuVisible(false);
+    closeMenu();
   };
 
   const navigateTo = (route: string) => {
-    console.log('[navigateTo] Attempting navigation to:', route);
-    setMenuVisible(false);
+    // Standardize to absolute route
+    let cleanRoute = route.replace(/\/\((admin|user|auth)\)/, '');
+    if (!cleanRoute.startsWith('/')) cleanRoute = `/${cleanRoute}`;
 
-    // Try multiple navigation methods
-    try {
-      router.push(route);
-      console.log('[navigateTo] router.push called for:', route);
-    } catch (error) {
-      console.error('[navigateTo] router.push failed:', error);
-      // Fallback to replace
+    console.log('[navigateTo] Request:', cleanRoute);
+    closeMenu();
+
+    // Use router.navigate which is generally safer for tab/root navigation on Web
+    setTimeout(() => {
       try {
-        router.replace(route);
-        console.log('[navigateTo] router.replace called for:', route);
-      } catch (replaceError) {
-        console.error('[navigateTo] router.replace also failed:', replaceError);
+        console.log('[navigateTo] Executing:', cleanRoute);
+        router.navigate(cleanRoute as any);
+      } catch (error) {
+        console.error('[navigateTo] Error navigating to', cleanRoute, ':', error);
+        router.replace(cleanRoute as any);
       }
-    }
+    }, 250);
   };
 
   return (
@@ -136,79 +159,8 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
-        {/* USER MENU DROPDOWN */}
-        {menuVisible && (
-          <Animated.View style={[styles.userMenu, isDesktop && styles.userMenuDesktop]}>
-            <View style={styles.menuHeader}>
-              <LinearGradient colors={['#ff00aa', '#aa00ff']} style={styles.avatarSmall}>
-                <Text style={styles.avatarTextSmall}>{user?.email[0].toUpperCase()}</Text>
-              </LinearGradient>
-              <View>
-                <Text style={styles.menuName}>{user?.name || 'VIP Guest'}</Text>
-                <Text style={styles.menuEmail}>{(user?.email || '').substring(0, 20)}...</Text>
-                <View style={[styles.roleBadge, isAdmin && styles.adminBadge]}>
-                  <Text style={styles.roleText}>{userRole.toUpperCase()}</Text>
-                </View>
-              </View>
-            </View>
-
-            {isStaff && (
-              <>
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/dashboard')}>
-                  <Ionicons name="apps-outline" size={22} color="#00ffff" />
-                  <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Panel Admin</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/qr-scanner')}>
-                  <Ionicons name="scan-outline" size={22} color="#00ffaa" />
-                  <Text style={[styles.menuItemText, { color: '#00ffaa' }]}>Escanear QR</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/products')}>
-                  <Ionicons name="cube-outline" size={22} color="#ff00ff" />
-                  <Text style={[styles.menuItemText, { color: '#ff00ff' }]}>Productos</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/tables')}>
-                  <Ionicons name="grid-outline" size={22} color="#FAD02C" />
-                  <Text style={[styles.menuItemText, { color: '#FAD02C' }]}>Mesas</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/orders-screen')}>
-                  <Ionicons name="list-outline" size={22} color="#FF6B9D" />
-                  <Text style={[styles.menuItemText, { color: '#FF6B9D' }]}>Todas las Órdenes</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(admin)/comandas')}>
-                  <Ionicons name="fast-food-outline" size={22} color="#ffff00" />
-                  <Text style={[styles.menuItemText, { color: '#ffff00' }]}>Comandas Cocina</Text>
-                </TouchableOpacity>
-                <View style={styles.menuDivider} />
-              </>
-            )}
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(user)/my-tickets')}>
-              <Ionicons name="receipt-outline" size={22} color="#ffaa00" />
-              <Text style={[styles.menuItemText, { color: '#ffaa00' }]}>Mis Entradas</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(user)/my-qr')}>
-              <Ionicons name="qr-code-outline" size={22} color="#00ffff" />
-              <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Mis QRs</Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={22} color="#ff3366" />
-              <Text style={styles.menuItemText}>Cerrar Sesión</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
         {/* ===  MAIN ACTIONS (CARTA VS QRS)  === */}
         <View style={styles.quickAccessContainer}>
-          {/* Button 1: CARTA DIGITAL (Scrolls to Menu) */}
           <TouchableOpacity
             style={styles.quickAccessButton}
             onPress={() => {
@@ -222,12 +174,11 @@ export default function Home() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Button 2: MIS QRS / CONSUMOS (Auth required) */}
           <TouchableOpacity
             style={styles.quickAccessButton}
             onPress={() => {
               if (user) {
-                router.push('/(user)/my-qr');
+                router.push('/my-qr');
               } else {
                 openLogin();
               }
@@ -272,6 +223,107 @@ export default function Home() {
           <Text style={styles.footerText}> 2026 JOYWINE NIGHTCLUB • SAN JUAN</Text>
         </View>
       </ScrollView>
+
+      {/* OVERLAY PARA CERRAR MENÚ AL TOCAR FUERA */}
+      {menuVisible && (
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.overlay}
+          onPress={closeMenu}
+        />
+      )}
+
+      {/* USER MENU DROPDOWN (Outside ScrollView for fixed positioning and touch reliability) */}
+      {menuVisible && (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.userMenu,
+            isDesktop && styles.userMenuDesktop,
+            {
+              zIndex: 9999, // Force highest z-order
+              opacity: menuAnim,
+              transform: [
+                { scale: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+                { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }
+              ]
+            }
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.menuHeader}
+            activeOpacity={0.7}
+            onPress={() => {
+              console.log('[Menu] Header pressed');
+              navigateTo(isAdmin ? '/dashboard' : '/my-qr');
+            }}
+          >
+            <LinearGradient colors={['#ff00aa', '#aa00ff']} style={styles.avatarSmall}>
+              <Text style={styles.avatarTextSmall}>{user?.email[0].toUpperCase()}</Text>
+            </LinearGradient>
+            <View>
+              <Text style={styles.menuName}>{user?.name || 'VIP Guest'}</Text>
+              <Text style={styles.menuEmail}>{(user?.email || '').substring(0, 20)}...</Text>
+              <View style={[styles.roleBadge, isAdmin && styles.adminBadge]}>
+                <Text style={styles.roleText}>{userRole.toUpperCase()}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {isStaff && (
+            <>
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/dashboard')}>
+                <Ionicons name="apps-outline" size={22} color="#00ffff" />
+                <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Panel Admin</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/qr-scanner')}>
+                <Ionicons name="scan-outline" size={22} color="#00ffaa" />
+                <Text style={[styles.menuItemText, { color: '#00ffaa' }]}>Escanear QR</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/products')}>
+                <Ionicons name="cube-outline" size={22} color="#ff00ff" />
+                <Text style={[styles.menuItemText, { color: '#ff00ff' }]}>Productos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/tables')}>
+                <Ionicons name="grid-outline" size={22} color="#FAD02C" />
+                <Text style={[styles.menuItemText, { color: '#FAD02C' }]}>Mesas</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/orders-screen')}>
+                <Ionicons name="list-outline" size={22} color="#FF6B9D" />
+                <Text style={[styles.menuItemText, { color: '#FF6B9D' }]}>Todas las Órdenes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/comandas')}>
+                <Ionicons name="fast-food-outline" size={22} color="#ffff00" />
+                <Text style={[styles.menuItemText, { color: '#ffff00' }]}>Comandas Cocina</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+            </>
+          )}
+
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/complaints')}>
+            <Ionicons name="chatbox-ellipses-outline" size={22} color="#cc99ff" />
+            <Text style={[styles.menuItemText, { color: '#cc99ff' }]}>Buzón de Quejas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/my-qr')}>
+            <Ionicons name="qr-code-outline" size={22} color="#00ffff" />
+            <Text style={[styles.menuItemText, { color: '#00ffff' }]}>Mis QRs</Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={22} color="#ff3366" />
+            <Text style={styles.menuItemText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
 
       {/* FAB CARRITO */}
       <Link href="/(user)/cart" asChild>
@@ -498,4 +550,9 @@ const styles = StyleSheet.create({
   // Footer
   footer: { marginTop: 40, paddingBottom: 20, alignItems: 'center' },
   footerText: { color: '#666', fontSize: 12, letterSpacing: 1, alignItems: 'center', justifyContent: 'center', textAlign: 'center' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 999,
+  },
 });

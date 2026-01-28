@@ -1,11 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from './hook';
 import socketService from '../services/socketService';
-import { 
-  orderCreatedRealtime, 
-  orderUpdatedRealtime, 
-  orderStatusChangedRealtime, 
-  orderDeletedRealtime 
+import {
+  orderCreatedRealtime,
+  orderUpdatedRealtime,
+  orderStatusChangedRealtime,
+  orderDeletedRealtime
 } from '../store/slices/ordersSlice';
 
 /**
@@ -14,11 +14,11 @@ import {
 export const useWebSocket = () => {
   const dispatch = useAppDispatch();
   const { user, token } = useAppSelector((s) => s.auth);
-  
+
   // Conectar al WebSocket cuando el usuario esté autenticado
   const connectSocket = useCallback(async () => {
     if (!user || !token) return;
-    
+
     try {
       await socketService.connect(token);
       console.log('🔌 WebSocket conectado para usuario:', user.email);
@@ -39,7 +39,7 @@ export const useWebSocket = () => {
 
     const unsubscribe = socketService.subscribeToOrders((data: any) => {
       console.log('📦 Evento de orden recibido:', data);
-      
+
       switch (data.type) {
         case 'order:created':
           dispatch(orderCreatedRealtime(data.order));
@@ -112,6 +112,10 @@ export const useWebSocket = () => {
     disconnect: disconnectSocket,
     subscribeToOrders,
     subscribeToEntranceTickets,
+    subscribeToMyOrders: (cb: (data: any) => void) => {
+      if (user?._id) return socketService.subscribeToMyOrders(user._id, cb);
+      return () => { };
+    },
   };
 };
 

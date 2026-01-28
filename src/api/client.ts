@@ -142,6 +142,7 @@ class ApiClient {
       const response = await this.fallbackInstance.post('/api/user/login', {
         email,
         password,
+        type: 'qr',
       });
       return response.data;
     } catch (error) {
@@ -183,6 +184,34 @@ class ApiClient {
     this.setAuthToken(null);
   }
 
+  // Método específico para obtener proveedores del Sistema A
+  public async getSuppliers() {
+    try {
+      if (!this.fallbackInstance) {
+        // Si no hay fallback, intentamos endpoint local o lanzamos error?
+        // Asumimos que System A es accesible via fallback o baseURL
+        return this.instance.get('/api/suppliers');
+      }
+      return this.fallbackInstance.get('/api/suppliers');
+    } catch (error) {
+      console.error('[Suppliers] Error fetching suppliers:', error);
+      throw error;
+    }
+  }
+
+  // Método específico para crear gastos en Sistema A
+  public async createExpense(data: any) {
+    try {
+      if (!this.fallbackInstance) {
+        return this.instance.post('/api/expenses', data);
+      }
+      return this.fallbackInstance.post('/api/expenses', data);
+    } catch (error) {
+      console.error('[Expenses] Error creating expense:', error);
+      throw error;
+    }
+  }
+
   // Métodos de diagnóstico
   public getBaseURL() {
     return this.instance.defaults.baseURL;
@@ -211,6 +240,9 @@ export const setAuthToken = apiClientInstance.setAuthToken.bind(apiClientInstanc
 export const clearAuthToken = apiClientInstance.clearAuthToken.bind(apiClientInstance);
 export const loginToSystemA = apiClientInstance.loginToSystemA.bind(apiClientInstance);
 export const registerToSystemA = apiClientInstance.registerToSystemA.bind(apiClientInstance);
+export const getSuppliers = apiClientInstance.getSuppliers.bind(apiClientInstance);
+export const createExpense = apiClientInstance.createExpense.bind(apiClientInstance);
 export const getBaseURL = apiClientInstance.getBaseURL.bind(apiClientInstance);
 export const getFallbackBaseURL = apiClientInstance.getFallbackBaseURL.bind(apiClientInstance);
 export const getEnvironment = apiClientInstance.getEnvironment.bind(apiClientInstance);
+

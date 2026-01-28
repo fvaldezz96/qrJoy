@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
 import { fetchMetrics } from '../../src/store/slices/adminSlice';
+import Toast from 'react-native-toast-message';
 
 // === INTERFACES ===
 // interface OrdersMetrics {
@@ -154,8 +155,28 @@ export default function Dashboard() {
   const { metrics, loading, error } = useAppSelector((s) => s.admin);
 
   useEffect(() => {
+    // Carga inicial
     dispatch(fetchMetrics());
+
+    // Auto-refresh cada 30 segundos
+    const intervalId = setInterval(() => {
+      dispatch(fetchMetrics());
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch]);
+
+  useEffect(() => {
+    // Alerta de Stock Bajo
+    if (metrics && metrics.products && metrics.products.outOfStock > 0) {
+      Toast.show({
+        type: 'error',
+        text1: '⚠️ Alerta de Stock',
+        text2: `Hay ${metrics.products.outOfStock} productos agotados.`,
+        visibilityTime: 6000,
+      });
+    }
+  }, [metrics]);
 
   if (loading) {
     return (
@@ -345,11 +366,25 @@ export default function Dashboard() {
               route="/(admin)/qr-scanner"
             />
             <ActionCard
+              title="Nueva Venta"
+              icon="add-circle"
+              color="#00FF88"
+              gradient={['#1E3D0B', '#00FF88']}
+              route="/(admin)/new-sale"
+            />
+            <ActionCard
               title="Comandas"
               icon="restaurant"
               color="#ffff00"
               gradient={['#3D3D0B', '#cccc00']}
               route="/(admin)/comandas"
+            />
+            <ActionCard
+              title="Quejas"
+              icon="chatbox-ellipses"
+              color="#3B82F6"
+              gradient={['#0B3D5C', '#3B82F6']}
+              route="/(admin)/complaints"
             />
           </View>
         </View>

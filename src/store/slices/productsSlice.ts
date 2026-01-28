@@ -1,4 +1,3 @@
-// src/store/slices/productsSlice.ts
 import { createAsyncThunk, createEntityAdapter, createSlice } from '@reduxjs/toolkit';
 
 import api from '../../api/client';
@@ -7,7 +6,6 @@ import { setAuthToken } from '../../api/setAuthToken';
 import { readToken } from '../../utils/tokenStorage';
 import { RootState } from '../index';
 
-// === TIPOS ===
 export type ProductCategory = 'drink' | 'food' | 'ticket';
 
 export interface Product {
@@ -29,7 +27,6 @@ export interface Product {
 
 export type UpsertProductDto = Omit<Product, '_id' | 'createdAt' | 'updatedAt'>;
 
-// === ADAPTER ===
 const productsAdapter = createEntityAdapter<Product>({
   sortComparer: (a: Product, b: Product) => a.name.localeCompare(b.name),
 });
@@ -38,7 +35,6 @@ export const createProduct = createAsyncThunk<Product, Partial<Product>>(
   'products/create',
   async (payload, { rejectWithValue }) => {
     try {
-      // Aseguramos que el token esté aplicado al cliente antes de llamar al API
       const storedToken = await readToken();
       if (storedToken) {
         setAuthToken(storedToken);
@@ -122,13 +118,13 @@ const productsSlice = createSlice({
       .addCase(fetchProducts.pending, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = true;
-        state.loading = true; // ✅ Fix: Update global loading
+        state.loading = true;
         state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = false;
-        state.loading = false; // ✅ Fix: Update global loading
+        state.loading = false;
         state.lastFetched = Date.now();
 
         if (category === 'all') {
@@ -144,7 +140,7 @@ const productsSlice = createSlice({
       .addCase(fetchProducts.rejected, (state, action) => {
         const category = (action.meta.arg as FetchProductsArgs | undefined)?.category || 'all';
         state.loadingByCategory[category] = false;
-        state.loading = false; // ✅ Fix: Update global loading
+        state.loading = false;
         state.error = action.error.message || 'Error al cargar productos';
       })
       .addCase(createProduct.pending, (state) => {

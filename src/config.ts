@@ -1,14 +1,15 @@
 // Detectar entorno automáticamente
 const isProduction = process.env.NODE_ENV === 'production';
+console.log('NODE_ENV', process.env.NODE_ENV)
 const isDocker = process.env.EXPO_PUBLIC_DOCKER === 'true';
 
-// URLs dinámicas según entorno - HARDCODEADAS para producción
+// URLs dinámicas según entorno
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || (
   isProduction
     ? 'https://spectacular-smile-production.up.railway.app'
     : isDocker
       ? process.env.EXPO_PUBLIC_DOCKER_API_URL || 'http://localhost:3002'
-      : process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3002'
+      : 'http://localhost:3002'
 );
 
 export const SYSTEM_A_API_URL = process.env.EXPO_PUBLIC_SYSTEM_A_API_URL || (
@@ -16,7 +17,7 @@ export const SYSTEM_A_API_URL = process.env.EXPO_PUBLIC_SYSTEM_A_API_URL || (
     ? 'https://ideal-motivation-production.up.railway.app'
     : isDocker
       ? process.env.EXPO_PUBLIC_DOCKER_SYSTEM_A_URL || 'http://localhost:3000'
-      : process.env.EXPO_PUBLIC_LOCAL_SYSTEM_A_URL || 'http://localhost:3000'
+      : 'http://localhost:3000'
 );
 
 export const APP_NAME = 'JoyPark';
@@ -35,11 +36,11 @@ export const AUTH_CONFIG = {
 
   // Configuración de tokens
   tokenStorage: 'localStorage',
-  tokenExpiry: 3600000, // 1 hora
+  tokenExpiry: 3600000,
 
   // Auto-refresh
   autoRefresh: true,
-  refreshThreshold: 300000 // 5 minutos antes de expirar
+  refreshThreshold: 300000
 };
 
 // // 🚫 KEYCLOAK ELIMINADO - Variables mantenidas para compatibilidad

@@ -1,0 +1,28 @@
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+# Development stage
+FROM base AS dev
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install system dependencies
+RUN apk add --no-cache git python3 make g++
+
+# Install dependencies
+RUN npm install --legacy-peer-deps --no-audit
+
+# Copy source code
+COPY . .
+
+# Expose Expo dev server ports
+EXPOSE 8083 19003 19004 19005
+
+# Set environment variables for Expo
+ENV EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+ENV REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
+
+# Start Expo
+CMD ["npx", "expo", "start", "--web", "--host", "0.0.0.0", "--port", "19003"]

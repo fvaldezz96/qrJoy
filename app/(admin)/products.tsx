@@ -19,7 +19,17 @@ import { ENDPOINTS } from '../../src/config';
 import { setAuthToken } from '../../src/api/setAuthToken';
 import { readToken } from '../../src/utils/tokenStorage';
 import { showAlert } from '../../src/utils/showAlert';
-import { useAppSelector } from '../../src/hook';
+import { useAppDispatch, useAppSelector } from '../../src/hook';
+import {
+  createProduct,
+  fetchProducts,
+  selectAllProducts,
+  selectProductCreateError,
+  selectProductCreating,
+  selectProductsLoading,
+} from '../../src/store/slices/productsSlice';
+import { fetchSuppliers, selectAllSuppliers } from '../../src/store/slices/suppliersSlice';
+import { fetchStock, restockProductThunk, selectStockByProduct } from '../../src/store/slices/stockSlice';
 
 interface Product {
   _id: string;
@@ -46,11 +56,13 @@ export default function AdminProductsScreen() {
   const userRole = getRoleName(user);
   const isStaff = userRole === 'admin' || userRole === 'employee';
 
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector(selectAllProducts);
+  const loading = useAppSelector(selectProductsLoading);
+  const submitting = useAppSelector(selectProductCreating);
+  const createError = useAppSelector(selectProductCreateError);
 
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState<'drink' | 'food' | 'ticket'>('drink');
@@ -60,53 +72,77 @@ export default function AdminProductsScreen() {
   const [stockRestaurant, setStockRestaurant] = useState('');
   const [stockDoor, setStockDoor] = useState('');
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { data } = await api.get(ENDPOINTS.products.base, { params: { limit: 100 } });
-      const items = (data?.data?.items ?? []) as Product[];
-      setProducts(items);
-    } catch (e: any) {
-      setError('No se pudieron cargar los productos');
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    dispatch(fetchProducts({ force: true }));
+    dispatch(fetchSuppliers());
+  }, [dispatch]);
+
+  // REPO STOCK STATE
+  const [showRestock, setShowRestock] = useState(false);
+  const [targetProduct, setTargetProduct] = useState<Product | null>(null);
+  const [restockQty, setRestockQty] = useState('');
+  const [restockCost, setRestockCost] = useState('');
+  const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [restockLocation, setRestockLocation] = useState<'bar' | 'restaurant' | 'door'>('bar');
+  const suppliers = useAppSelector(selectAllSuppliers);
+
+  const openRestock = (p: Product) => {
+    setTargetProduct(p);
+    setRestockQty('');
+    setRestockCost('');
+    setSelectedSupplier('');
+    setRestockLocation('bar');
+    setShowRestock(true);
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  const handleRestock = async () => {
+    if (!targetProduct || !restockQty || !restockCost || !selectedSupplier) {
+      return showAlert('Error', 'Completá todos los campos');
+    }
+    const qty = Number(restockQty);
+    const cost = Number(restockCost);
+    if (isNaN(qty) || isNaN(cost)) return showAlert('Error', 'Valores numéricos inválidos');
+
+    try {
+      await dispatch(restockProductThunk({
+        productId: targetProduct._id,
+        productName: targetProduct.name,
+        supplierId: selectedSupplier,
+        quantity: qty,
+        cost,
+        location: restockLocation,
+      })).unwrap();
+
+      showAlert('Éxito', 'Stock recargado y gasto registrado');
+      setShowRestock(false);
+    } catch (e: any) {
+      showAlert('Error', e.message || 'Falló la recarga');
+    }
+  };
 
   const handleCreate = async () => {
     if (!name.trim() || !price.trim()) return;
     const numericPrice = Number(price.replace(',', '.'));
     if (Number.isNaN(numericPrice)) return;
 
-    try {
-      setSubmitting(true);
-      setError(null);
-      // Aseguramos que el token esté aplicado al cliente antes de llamar al API
-      const storedToken = await readToken();
-      if (storedToken) {
-        setAuthToken(storedToken);
-      }
+    const initialStock = {
+      bar: stockBar.trim() ? Number(stockBar) || 0 : 0,
+      restaurant: stockRestaurant.trim() ? Number(stockRestaurant) || 0 : 0,
+      door: stockDoor.trim() ? Number(stockDoor) || 0 : 0,
+    };
 
-      const initialStock: Record<'bar' | 'restaurant' | 'door', number> = {
-        bar: stockBar.trim() ? Number(stockBar) || 0 : 0,
-        restaurant: stockRestaurant.trim() ? Number(stockRestaurant) || 0 : 0,
-        door: stockDoor.trim() ? Number(stockDoor) || 0 : 0,
-      };
+    const result = await dispatch(createProduct({
+      name: name.trim(),
+      category,
+      price: numericPrice,
+      active: true,
+      sku: sku.trim() || undefined,
+      imageUrl: imageUrl.trim() || undefined,
+      // @ts-ignore - API expects initialStock
+      initialStock,
+    }));
 
-      await api.post(ENDPOINTS.products.create, {
-        name: name.trim(),
-        category,
-        price: numericPrice,
-        active: true,
-        sku: sku.trim() || undefined,
-        imageUrl: imageUrl.trim() || undefined,
-        initialStock,
-      });
+    if (createProduct.fulfilled.match(result)) {
       setName('');
       setPrice('');
       setSku('');
@@ -114,12 +150,8 @@ export default function AdminProductsScreen() {
       setStockBar('');
       setStockRestaurant('');
       setStockDoor('');
-      await loadProducts();
-    } catch (e: any) {
-      setError('Error al crear producto');
-      showAlert('Error', 'No se pudo crear el producto. Verificá los datos e intentá de nuevo.');
-    } finally {
-      setSubmitting(false);
+      setShowForm(false);
+      showAlert('Éxito', 'Producto creado correctamente');
     }
   };
 
@@ -141,118 +173,128 @@ export default function AdminProductsScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.title}>Productos</Text>
             <Text style={styles.subtitle}>Gestioná la carta y precios</Text>
           </View>
-        </View>
-
-        <View style={styles.formBox}>
-          <Text style={styles.formTitle}>Nuevo producto</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre"
-            placeholderTextColor="#6B7280"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Precio"
-            keyboardType="decimal-pad"
-            placeholderTextColor="#6B7280"
-            value={price}
-            onChangeText={setPrice}
-          />
-
-          <View style={styles.categoryRow}>
-            <CategoryChip
-              label="Bebida"
-              value="drink"
-              selected={category === 'drink'}
-              onPress={() => setCategory('drink')}
-            />
-            <CategoryChip
-              label="Comida"
-              value="food"
-              selected={category === 'food'}
-              onPress={() => setCategory('food')}
-            />
-            <CategoryChip
-              label="Ticket"
-              value="ticket"
-              selected={category === 'ticket'}
-              onPress={() => setCategory('ticket')}
-            />
-          </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="SKU (opcional)"
-            placeholderTextColor="#6B7280"
-            value={sku}
-            onChangeText={setSku}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="URL de imagen (opcional)"
-            placeholderTextColor="#6B7280"
-            value={imageUrl}
-            onChangeText={setImageUrl}
-          />
-
-          <View style={styles.stockRow}>
-            <View style={{ flex: 1, marginRight: 4 }}>
-              <TextInput
-                style={styles.input}
-                placeholder="Stock bar"
-                placeholderTextColor="#6B7280"
-                keyboardType="number-pad"
-                value={stockBar}
-                onChangeText={setStockBar}
-              />
-            </View>
-            <View style={{ flex: 1, marginHorizontal: 4 }}>
-              <TextInput
-                style={styles.input}
-                placeholder="Stock restaurante"
-                placeholderTextColor="#6B7280"
-                keyboardType="number-pad"
-                value={stockRestaurant}
-                onChangeText={setStockRestaurant}
-              />
-            </View>
-            <View style={{ flex: 1, marginLeft: 4 }}>
-              <TextInput
-                style={styles.input}
-                placeholder="Stock puerta"
-                placeholderTextColor="#6B7280"
-                keyboardType="number-pad"
-                value={stockDoor}
-                onChangeText={setStockDoor}
-              />
-            </View>
-          </View>
-
-          {error && <Text style={styles.errorText}>{error}</Text>}
-
           <TouchableOpacity
-            style={[styles.saveButton, (!name.trim() || !price.trim() || submitting) && { opacity: 0.6 }]}
-            onPress={handleCreate}
-            disabled={!name.trim() || !price.trim() || submitting}
+            style={[styles.toggleBtn, showForm && styles.toggleBtnActive]}
+            onPress={() => setShowForm(!showForm)}
           >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="save" size={18} color="#fff" />
-                <Text style={styles.saveText}>Guardar</Text>
-              </>
-            )}
+            <Ionicons name={showForm ? 'close' : 'add'} size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.listTitle}>Productos existentes</Text>
+        {showForm && (
+          <View style={styles.formBox}>
+            <Text style={styles.formTitle}>Nuevo producto</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre"
+              placeholderTextColor="#6B7280"
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Precio"
+              keyboardType="decimal-pad"
+              placeholderTextColor="#6B7280"
+              value={price}
+              onChangeText={setPrice}
+            />
+
+            <View style={styles.categoryRow}>
+              <CategoryChip
+                label="Bebida"
+                value="drink"
+                selected={category === 'drink'}
+                onPress={() => setCategory('drink')}
+              />
+              <CategoryChip
+                label="Comida"
+                value="food"
+                selected={category === 'food'}
+                onPress={() => setCategory('food')}
+              />
+              <CategoryChip
+                label="Ticket"
+                value="ticket"
+                selected={category === 'ticket'}
+                onPress={() => setCategory('ticket')}
+              />
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="SKU (opcional)"
+              placeholderTextColor="#6B7280"
+              value={sku}
+              onChangeText={setSku}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="URL de imagen (opcional)"
+              placeholderTextColor="#6B7280"
+              value={imageUrl}
+              onChangeText={setImageUrl}
+            />
+
+            <View style={styles.stockRow}>
+              <View style={{ flex: 1, marginRight: 4 }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Stock bar"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="number-pad"
+                  value={stockBar}
+                  onChangeText={setStockBar}
+                />
+              </View>
+              <View style={{ flex: 1, marginHorizontal: 4 }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Stock restaurante"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="number-pad"
+                  value={stockRestaurant}
+                  onChangeText={setStockRestaurant}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 4 }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Stock puerta"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="number-pad"
+                  value={stockDoor}
+                  onChangeText={setStockDoor}
+                />
+              </View>
+            </View>
+
+            {createError && <Text style={styles.errorText}>{createError}</Text>}
+
+            <TouchableOpacity
+              style={[styles.saveButton, (!name.trim() || !price.trim() || submitting) && { opacity: 0.6 }]}
+              onPress={handleCreate}
+              disabled={!name.trim() || !price.trim() || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="save" size={18} color="#fff" />
+                  <Text style={styles.saveText}>Guardar</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={styles.listTitle}>
+          {loading ? 'Cargando productos...' : `Productos existentes (${products.length})`}
+        </Text>
 
         {loading && !products.length ? (
           <View style={styles.center}>
@@ -274,13 +316,84 @@ export default function AdminProductsScreen() {
                 <View style={styles.itemRight}>
                   <Text style={styles.itemPrice}>${item.price}</Text>
                   {!item.active && <Text style={styles.inactive}>Inactivo</Text>}
+                  <TouchableOpacity onPress={() => openRestock(item)} style={styles.smallBtn}>
+                    <Ionicons name="cube" size={14} color="#fff" />
+                    <Text style={styles.smallBtnText}>Stock</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
           />
         )}
       </LinearGradient>
-    </KeyboardAvoidingView>
+
+      {/* RESTOCK MODAL */}
+      {
+        showRestock && targetProduct && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Reponer Stock: {targetProduct.name}</Text>
+
+              <Text style={styles.label}>Proveedor</Text>
+              <View style={styles.chipRow}>
+                {suppliers.map(s => (
+                  <TouchableOpacity
+                    key={s._id}
+                    style={[styles.chip, selectedSupplier === s._id && styles.chipActive]}
+                    onPress={() => setSelectedSupplier(s._id)}
+                  >
+                    <Text style={[styles.chipText, selectedSupplier === s._id && styles.chipTextActive]}>
+                      {s.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Ubicación</Text>
+              <View style={styles.chipRow}>
+                {(['bar', 'restaurant', 'door'] as const).map(l => (
+                  <TouchableOpacity
+                    key={l}
+                    style={[styles.chip, restockLocation === l && styles.chipActive]}
+                    onPress={() => setRestockLocation(l)}
+                  >
+                    <Text style={[styles.chipText, restockLocation === l && styles.chipTextActive]}>
+                      {l.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Cantidad a agregar"
+                placeholderTextColor="#666"
+                keyboardType="number-pad"
+                value={restockQty}
+                onChangeText={setRestockQty}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Costo Total ($)"
+                placeholderTextColor="#666"
+                keyboardType="decimal-pad"
+                value={restockCost}
+                onChangeText={setRestockCost}
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowRestock(false)}>
+                  <Text style={styles.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.confirmBtn} onPress={handleRestock}>
+                  <Text style={styles.confirmText}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )
+      }
+    </KeyboardAvoidingView >
   );
 }
 
@@ -388,4 +501,46 @@ const styles = StyleSheet.create({
   itemPrice: { color: '#FAD02C', fontWeight: '800', fontSize: 16 },
   inactive: { color: '#FCA5A5', fontSize: 11, marginTop: 2 },
   stockRow: { flexDirection: 'row', marginTop: 4, marginBottom: 4 },
+  toggleBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+  },
+  toggleBtnActive: {
+    backgroundColor: '#ff3366',
+  },
+  // New Styles
+  smallBtn: {
+    backgroundColor: '#3B82F6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 4,
+    gap: 4
+  },
+  smallBtnText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  modalOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
+    zIndex: 999
+  },
+  modalContent: {
+    backgroundColor: '#1F2937', width: '100%', borderRadius: 16, padding: 20,
+    borderWidth: 1, borderColor: '#374151'
+  },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+  label: { color: '#9CA3AF', marginBottom: 8, fontSize: 14, fontWeight: '600' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 12 },
+  cancelBtn: { padding: 10 },
+  cancelText: { color: '#9CA3AF' },
+  confirmBtn: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+  confirmText: { color: '#fff', fontWeight: 'bold' }
 });

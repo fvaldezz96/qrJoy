@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Platform,
@@ -18,6 +19,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../src/hook';
 import { fetchProducts, selectAllProducts } from '../../src/store/slices/productsSlice';
 import { fetchTables, selectActiveTables } from '../../src/store/slices/tablesSlice';
+import { createOrder } from '../../src/store/slices/ordersSlice';
 import { showAlert } from '../../src/utils/showAlert';
 
 interface CartItem {
@@ -83,49 +85,50 @@ export default function NewSaleScreen() {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const createSale = async () => {
+  const createSale = async (printTicket: boolean = false) => {
     if (cartItems.length === 0) {
       showAlert('Error', 'El carrito está vacío');
       return;
     }
 
     try {
-      // Crear la orden
-      const orderData = {
+      // 1. Crear la orden
+      const actionResult = await dispatch(createOrder({
+        tableId: selectedTableId || undefined,
         type: 'bar',
-        tableId: selectedTableId,
-        externalStoreId: 'JOY-WINE-MAIN',
-        externalEmployeeId: employeeId,
-        externalCashRegisterId: cashRegisterId,
         items: cartItems.map(item => ({
-          product: item.product._id,
+          product: item.product,
           quantity: item.quantity,
           price: item.price,
         })),
-      };
+      }));
 
-      const response = await fetch('http://localhost:3001/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?._id || 'demo-token'}`,
-        },
-        body: JSON.stringify(orderData),
-      });
+      const orderId = actionResult.payload as string;
 
-      if (!response.ok) {
-        throw new Error('Error al crear la venta');
+      if (!orderId) throw new Error('No se pudo obtener el ID de la orden');
+
+      // 2. Si es venta rápida (Efectivo & Ticket)
+      if (printTicket) {
+        // Importar dínámicamente para evitar ciclos
+        const { payCashOrder, closeOrder } = await import('../../src/store/slices/ordersSlice');
+
+        // Pagar
+        await dispatch(payCashOrder(orderId)).unwrap();
+
+        // Emitir Ticket
+        await dispatch(closeOrder(orderId)).unwrap();
+
+        Alert.alert('Éxito', 'Venta cobrada y ticket emitido correctamente 🖨️');
+      } else {
+        showAlert('Éxito', 'Orden creada correctamente');
       }
 
-      const result = await response.json();
-
-      showAlert('Éxito', 'Venta creada correctamente');
       setCartItems([]);
       setSelectedTableId(null);
       setStep('products');
 
     } catch (error: any) {
-      showAlert('Error', error.message || 'No se pudo crear la venta');
+      showAlert('Error', error.message || 'No se pudo procesar la venta');
     }
   };
 
@@ -246,11 +249,19 @@ export default function NewSaleScreen() {
             <Text style={styles.totalPrice}>${getTotal().toLocaleString()}</Text>
           </View>
 
-          {/* Botón de crear venta */}
-          <TouchableOpacity style={styles.createButton} onPress={createSale}>
-            <LinearGradient colors={['#00FF88', '#00AEEF']} style={styles.createButtonGradient}>
-              <Ionicons name="receipt" size={22} color="#fff" />
-              <Text style={styles.createButtonText}>Crear Venta</Text>
+          {/* Botón de crear venta (Solo crear) */}
+          <TouchableOpacity style={styles.createButton} onPress={() => createSale(false)}>
+            <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.createButtonGradient}>
+              <Ionicons name="cart" size={22} color="#fff" />
+              <Text style={styles.createButtonText}>Crear Pedido</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Botón de venta rápida (Efectivo y Ticket) */}
+          <TouchableOpacity style={[styles.createButton, { marginTop: 12 }]} onPress={() => createSale(true)}>
+            <LinearGradient colors={['#10B981', '#059669']} style={styles.createButtonGradient}>
+              <Ionicons name="cash" size={22} color="#fff" />
+              <Text style={styles.createButtonText}>Cobrar Efectivo & Ticket</Text>
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -309,7 +320,14 @@ export default function NewSaleScreen() {
                   <Text style={styles.productName}>{item.name}</Text>
                   <Text style={styles.productCategory}>{item.category}</Text>
                 </View>
-                <Text style={styles.productPrice}>${item.price.toLocaleString()}</Text>
+                <View style={styles.priceStockRow}>
+                  <Text style={styles.productPrice}>${item.price.toLocaleString()}</Text>
+                  {item.stock !== undefined && (
+                    <Text style={[styles.productStock, item.stock < 5 && styles.lowStock]}>
+                      Stock: {item.stock}
+                    </Text>
+                  )}
+                </View>
                 <View style={styles.addButton}>
                   <Ionicons name="add" size={16} color="#fff" />
                   <Text style={styles.addButtonText}>Agregar</Text>
@@ -428,7 +446,20 @@ const styles = StyleSheet.create({
     color: '#00FF88',
     fontSize: 20,
     fontWeight: '900',
+  },
+  priceStockRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
     marginBottom: 12,
+  },
+  productStock: {
+    color: '#A7A9BE',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  lowStock: {
+    color: '#E53170',
   },
   addButton: {
     flexDirection: 'row',

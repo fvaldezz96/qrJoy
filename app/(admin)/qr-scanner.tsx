@@ -136,9 +136,16 @@ export default function QrScanner() {
     try {
       const payload = JSON.parse(data) as { c: string; s: string };
       const res = await dispatch(redeemQr({ code: payload.c, signature: payload.s })).unwrap();
-      const order = res?.data?.order ?? null;
-      setLastOrder(order);
-      triggerResult(order ? 'success' : 'error');
+
+      // Check if it's an order or a different kind of ticket
+      const { redeemed, qr, order } = res.data;
+
+      if (redeemed) {
+        setLastOrder(order);
+        triggerResult('success');
+      } else {
+        throw new Error('NOT_REDEEMED');
+      }
     } catch (e: any) {
       setLastOrder(null);
       triggerResult('error');
@@ -249,6 +256,9 @@ export default function QrScanner() {
           {status === 'success' && (
             <>
               <Text style={[styles.statusText, { color: '#00FF88' }]}>QR válido</Text>
+              {!lastOrder && (
+                <Text style={styles.successSubText}>Ingreso o Ticket validado correctamente.</Text>
+              )}
               {lastOrder && (
                 <View style={styles.orderBox}>
                   <Text style={styles.orderTitle}>Detalle del pedido</Text>
@@ -376,6 +386,13 @@ const styles = {
     color: '#FAD02C',
     textShadowColor: '#FAD02C50',
     textShadowRadius: 8,
+  },
+  successSubText: {
+    color: '#00FF88',
+    fontSize: 14,
+    marginTop: 8,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   orderBox: {
     marginTop: 12,

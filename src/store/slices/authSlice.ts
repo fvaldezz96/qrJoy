@@ -19,6 +19,7 @@ interface AuthState {
   token: string | null;
   user: User | null;
   loading: boolean;
+  isGlobalLoading: boolean;
   error?: string;
 }
 
@@ -26,6 +27,7 @@ const initialState: AuthState = {
   token: null,
   user: null,
   loading: false,
+  isGlobalLoading: false,
 };
 
 // ✅ Limpieza del input
@@ -36,20 +38,22 @@ function sanitize(input: string) {
 // ✅ Login seguro con persistencia cifrada
 export const loginThunk = createAsyncThunk(
   'auth/login',
-  async (body: { email: string; password: string }) => {
+  async (body: { email: string; password: string }, { dispatch }) => {
+    dispatch(showLoader());
     const cleanEmail = sanitize(body.email);
     const cleanPass = sanitize(body.password);
 
     // IMPORTANTE: Intentar login directo primero, si falla usar fallback
     try {
-      const { data } = await api.post('/auth/login', { email: cleanEmail, password: cleanPass });
+      const { data } = await api.post('/auth/login', { email: cleanEmail, password: cleanPass, type: 'qr' });
       const payload = data.data as { token: string; user: User };
 
       // Guardar token de forma segura (nativo/web)
-      await saveToken(payload.token);
       setAuthToken(payload.token);
+      dispatch(hideLoader());
       return payload;
     } catch (directError) {
+      dispatch(hideLoader());
       console.warn('[Auth] Login directo falló, intentando con Sistema A:', directError);
 
       // Fallback: delegar login a Sistema A
@@ -122,38 +126,31 @@ export const loginWithGoogleThunk = createAsyncThunk(
 // ✅ Registro de usuario (Centralizado en Sistema A)
 export const registerThunk = createAsyncThunk(
   'auth/register',
-  async (body: { name: string; email: string; password: string; cel: string }) => {
+  async (body: { name: string; email: string; password: string; cel: string; role: Role }, { dispatch }) => {
+    dispatch(showLoader());
     const cleanEmail = sanitize(body.email);
     const cleanPass = sanitize(body.password);
     const cleanName = sanitize(body.name);
     const celNumber = Number(String(body.cel).replace(/\D/g, ''));
+    const role = body.role || 'user';
 
-    // IMPORTANTE: Registrar directamente en Sistema A
-    // El sistema A requiere: email, password, name, userType y cel
-    await api.registerToSystemA({
+    // REGISTRO EN QR API (Local)
+    // Esto crea el usuario en la DB de QR API con el rol especificado.
+    const { data } = await api.post('/auth/register', {
       email: cleanEmail,
       password: cleanPass,
       name: cleanName,
-      surname: '', // Opcional, enviamos vacío
-      userType: 'comprador',
       cel: celNumber,
+      role: role,
     });
 
-    // Como el endpoint de registro no devuelve token, hacemos login inmediato
-    const loginResponse = await api.loginToSystemA(cleanEmail, cleanPass);
+    // La respuesta de /auth/register ya devuelve { user, token } (ver auth.controller.ts)
+    const payload = data.data as { token: string; user: User };
 
-    if (loginResponse.success) {
-      const payload = {
-        token: loginResponse.token,
-        user: loginResponse.user,
-      };
-
-      await saveToken(payload.token);
-      setAuthToken(payload.token);
-      return payload;
-    } else {
-      throw new Error('Registro exitoso en Sistema A, pero falló el auto-login');
-    }
+    await saveToken(payload.token);
+    setAuthToken(payload.token);
+    dispatch(hideLoader());
+    return payload;
   },
 );
 
@@ -176,6 +173,12 @@ const slice = createSlice({
       state.user = null;
       setAuthToken(null);
       removeToken();
+    },
+    showLoader(state) {
+      state.isGlobalLoading = true;
+    },
+    hideLoader(state) {
+      state.isGlobalLoading = false;
     },
   },
   extraReducers: (b) => {
@@ -235,5 +238,5 @@ const slice = createSlice({
   },
 });
 
-export const { logout } = slice.actions;
+export const { logout, showLoader, hideLoader } = slice.actions;
 export default slice.reducer;

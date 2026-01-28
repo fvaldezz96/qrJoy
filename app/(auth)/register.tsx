@@ -19,6 +19,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [cel, setCel] = useState('');
+  const [role, setRole] = useState<'user' | 'employee' | 'admin'>('user');
 
   // Google OAuth
   const [_request, _response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -46,7 +47,7 @@ export default function Register() {
     }
 
     try {
-      await dispatch(registerThunk({ name, email, password, cel })).unwrap();
+      await dispatch(registerThunk({ name, email, password, cel, role })).unwrap();
       Alert.alert('Bienvenido', 'Cuenta creada correctamente');
       router.replace('/');
     } catch (e: any) {
@@ -54,11 +55,29 @@ export default function Register() {
     }
   };
 
+  const RoleOption = ({ value, label }: { value: typeof role; label: string }) => (
+    <TouchableOpacity
+      style={[styles.roleOption, role === value && styles.roleOptionSelected]}
+      onPress={() => setRole(value)}
+    >
+      <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>Crear cuenta</Text>
         <Text style={styles.subtitle}>Registrate con tu correo y número de WhatsApp</Text>
+
+        <View style={styles.roleContainer}>
+          <Text style={styles.roleLabel}>Selecciona tu rol (Demo):</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rolesScroll}>
+            <RoleOption value="user" label="Usuario" />
+            <RoleOption value="employee" label="Empleado" />
+            <RoleOption value="admin" label="Admin" />
+          </ScrollView>
+        </View>
 
         <TextInput
           value={name}
@@ -202,4 +221,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+  roleContainer: { marginBottom: 20 },
+  roleLabel: { color: '#ccc', marginBottom: 10, marginLeft: 4 },
+  rolesScroll: { flexDirection: 'row', gap: 10 },
+  roleOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#1A1A2E',
+    borderWidth: 1,
+    borderColor: '#333',
+    marginRight: 10,
+  },
+  roleOptionSelected: {
+    backgroundColor: '#8B5CF6',
+    borderColor: '#8B5CF6',
+  },
+  roleText: { color: '#888', fontWeight: '600' },
+  roleTextSelected: { color: '#fff' },
 });

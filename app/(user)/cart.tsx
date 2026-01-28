@@ -37,6 +37,7 @@ export default function Cart() {
   const [displayTotal, setDisplayTotal] = useState(total);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState<'mp' | 'cash' | null>(null);
 
   const DEMO_INTERNAL_EMAILS = [
     'demo@demo.com',
@@ -88,7 +89,9 @@ export default function Cart() {
 
   const handlePayMp = async () => {
     if (!validateBeforePay()) return;
+    if (processingPayment) return; // Prevenir doble clic
 
+    setProcessingPayment('mp');
     try {
       const orderId = await dispatch(createOrder({ tableId: selectedTableId!, type })).unwrap();
 
@@ -108,12 +111,16 @@ export default function Cart() {
       dispatch(clearCart());
     } catch (error: any) {
       showAlert('Error', error.message || 'No se pudo procesar el pago');
+    } finally {
+      setProcessingPayment(null);
     }
   };
 
   const handlePayCash = async () => {
     if (!validateBeforePay()) return;
+    if (processingPayment) return; // Prevenir doble clic
 
+    setProcessingPayment('cash');
     try {
       const orderId = await dispatch(createOrder({ tableId: selectedTableId!, type })).unwrap();
 
@@ -122,6 +129,8 @@ export default function Cart() {
       dispatch(clearCart());
     } catch (error: any) {
       showAlert('Error', error.message || 'No se pudo generar el QR');
+    } finally {
+      setProcessingPayment(null);
     }
   };
 
@@ -262,15 +271,15 @@ export default function Cart() {
             {isInternalDemoUser ? (
               <>
                 <TouchableOpacity
-                  style={[styles.payButton, loading && styles.payButtonDisabled]}
+                  style={[styles.payButton, processingPayment && styles.payButtonDisabled]}
                   onPress={handlePayMp}
-                  disabled={loading}
+                  disabled={!!processingPayment}
                 >
                   <LinearGradient
-                    colors={loading ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#EC4899']}
+                    colors={processingPayment ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#EC4899']}
                     style={styles.payGradient}
                   >
-                    {loading ? (
+                    {processingPayment === 'mp' ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
                       <>
@@ -282,15 +291,15 @@ export default function Cart() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.payButton, loading && styles.payButtonDisabled]}
+                  style={[styles.payButton, processingPayment && styles.payButtonDisabled]}
                   onPress={handlePayCash}
-                  disabled={loading}
+                  disabled={!!processingPayment}
                 >
                   <LinearGradient
-                    colors={loading ? ['#6B7280', '#4B5563'] : ['#10B981', '#059669']}
+                    colors={processingPayment ? ['#6B7280', '#4B5563'] : ['#10B981', '#059669']}
                     style={styles.payGradient}
                   >
-                    {loading ? (
+                    {processingPayment === 'cash' ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
                       <>
@@ -303,15 +312,15 @@ export default function Cart() {
               </>
             ) : (
               <TouchableOpacity
-                style={[styles.payButton, loading && styles.payButtonDisabled]}
+                style={[styles.payButton, processingPayment && styles.payButtonDisabled]}
                 onPress={handlePayMp}
-                disabled={loading}
+                disabled={!!processingPayment}
               >
                 <LinearGradient
-                  colors={loading ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#EC4899']}
+                  colors={processingPayment ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#EC4899']}
                   style={styles.payGradient}
                 >
-                  {loading ? (
+                  {processingPayment === 'mp' ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <>

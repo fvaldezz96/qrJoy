@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
+import SecurePersistStorage from './secureStorage';
 
 import adminReducer from './slices/adminSlice';
 import authReducer from './slices/authSlice';
@@ -9,12 +10,15 @@ import comandasReducer from './slices/comandasSlice';
 import entranceTicketsReducer from './slices/entranceTicketsSlice';
 import ordersReducer from './slices/ordersSlice';
 import productsReducer from './slices/productsSlice';
+import stockReducer from './slices/stockSlice';
+import suppliersReducer from './slices/suppliersSlice';
 import qrsReducer from './slices/qrsSlice';
 import tablesReducer from './slices/tablesSlice';
 import ticketsReducer from './slices/ticketsSlice';
+import complaintsReducer from './slices/complaintsSlice';
 const persistConfig = {
   key: 'root',
-  storage: AsyncStorage,
+  storage: SecurePersistStorage,
   whitelist: ['auth'],
 };
 
@@ -29,6 +33,9 @@ const rootReducer = combineReducers({
   tables: tablesReducer,
   tickets: ticketsReducer,
   qrs: qrsReducer,
+  stock: stockReducer,
+  suppliers: suppliersReducer,
+  complaints: complaintsReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

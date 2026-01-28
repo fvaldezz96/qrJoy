@@ -16,7 +16,9 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 
 import { useAppDispatch, useAppSelector } from '../../src/hook';
-import { fetchUserTickets } from '../../src/store/slices/entranceTicketsSlice';
+import { useWebSocket } from '../../src/hook/useWebSocket';
+import { fetchUserTickets, fetchUserReceipts } from '../../src/store/slices/entranceTicketsSlice';
+import { fetchMyOrders, orderStatusChangedRealtime } from '../../src/store/slices/ordersSlice';
 
 export default function MyTickets() {
   const dispatch = useAppDispatch();
@@ -27,25 +29,46 @@ export default function MyTickets() {
   const userId = user?._id;
   const isUser = user?.role === 'user';
 
-  // === TICKETS STATE ===
-  const { entities, loading: ticketsLoading } = useAppSelector((s) => s.entranceTickets);
+  // === TICKETS & ORDERS STATE ===
+  const { entities, loading: ticketsLoading, receipts } = useAppSelector((s) => s.entranceTickets);
+  const { myOrders, loading: ordersLoading } = useAppSelector((s) => s.orders);
   const tickets = Object.values(entities);
 
-  const [step, setStep] = useState<'cart' | 'qr'>('cart');
+  const [activeTab, setActiveTab] = useState<'tickets' | 'receipts' | 'orders'>('tickets');
 
-  // === TRAER ENTRADAS SI ES USER ===
+  // === WEBSOCKET ===
+  const { subscribeToMyOrders, connect } = useWebSocket();
+
+  // === TRAER DATOS SI ES USER ===
   useEffect(() => {
     if (userId && isUser) {
       dispatch(fetchUserTickets({ userId }));
+      dispatch(fetchUserReceipts());
+      dispatch(fetchMyOrders());
+      connect();
     }
-  }, [userId, isUser, dispatch]);
+  }, [userId, isUser, dispatch, connect]);
+
+  // === SUSCRIPCIÓN EN TIEMPO REAL ===
+  useEffect(() => {
+    if (userId && isUser) {
+      const unsub = subscribeToMyOrders((data) => {
+        if (data.type === 'order:status_changed') {
+          dispatch(orderStatusChangedRealtime({
+            orderId: data.orderId,
+            status: data.status,
+            updatedAt: data.updatedAt
+          }));
+        }
+      });
+      return () => {
+        if (unsub) unsub();
+      };
+    }
+  }, [userId, isUser, subscribeToMyOrders, dispatch]);
 
   const goBack = () => {
-    if (step === 'qr') {
-      setStep('cart');
-    } else {
-      router.back();
-    }
+    router.back();
   };
 
   // === QR ANIMADO ===
@@ -144,120 +167,172 @@ export default function MyTickets() {
         {/* HEADER */}
         <View style={styles.headerGlass}>
           <Ionicons name="qr-code" size={32} color="#00FFAA" />
-          <Text style={styles.title}>Tus QR de Acceso</Text>
-          <Text style={styles.subtitle}>Escaneá y entrá al boliche</Text>
+          <Text style={styles.title}>Mis Accesos y Comprobantes</Text>
+          <Text style={styles.subtitle}>Tus entradas y recibos de consumo</Text>
         </View>
 
-        {/* BOTÓN COMPRA */}
-        <Animated.View style={{ transform: [{ scale: bounceAnim }] }}>
+        {/* TAB SELECTOR */}
+        <View style={styles.tabBar}>
           <TouchableOpacity
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={buySample}
-            style={styles.buyButton}
-            activeOpacity={0.8}
+            style={[styles.tab, activeTab === 'tickets' && styles.tabActive]}
+            onPress={() => setActiveTab('tickets')}
           >
-            <LinearGradient
-              colors={['#FAD02C', '#FF6B9D']}
-              style={styles.buyButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name="sparkles" size={20} color="#000" />
-              <Text style={styles.buyButtonText}>Comprar Ticket (Demo)</Text>
-            </LinearGradient>
+            <Text style={[styles.tabText, activeTab === 'tickets' && styles.tabTextActive]}>Entradas</Text>
           </TouchableOpacity>
-        </Animated.View>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'orders' && styles.tabActive]}
+            onPress={() => setActiveTab('orders')}
+          >
+            <Text style={[styles.tabText, activeTab === 'orders' && styles.tabTextActive]}>Pedidos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'receipts' && styles.tabActive]}
+            onPress={() => setActiveTab('receipts')}
+          >
+            <Text style={[styles.tabText, activeTab === 'receipts' && styles.tabTextActive]}>Recibos</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* LISTA DE ENTRADAS */}
+        {/* LISTA DE ENTRADAS / RECIBOS / PEDIDOS */}
         <FlatList
-          data={tickets}
+          data={activeTab === 'tickets' ? tickets : activeTab === 'orders' ? myOrders : receipts}
           keyExtractor={(i) => i._id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="ticket-outline" size={60} color="#555" />
-              <Text style={styles.emptyText}>No tenés entradas todavía</Text>
-              <Text style={styles.emptySub}>¡Comprá una y empezá la fiesta!</Text>
+              <Ionicons
+                name={activeTab === 'tickets' ? "ticket-outline" : activeTab === 'orders' ? "cart-outline" : "receipt-outline"}
+                size={60} color="#555"
+              />
+              <Text style={styles.emptyText}>
+                {activeTab === 'tickets' ? 'No tenés entradas todavía' : activeTab === 'orders' ? 'No tenés pedidos activos' : 'No tenés recibos de pedidos'}
+              </Text>
             </View>
           }
           renderItem={({ item }) => {
-            const fechaValida = new Date(item.validUntil).toLocaleString('es-AR', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            });
+            if (activeTab === 'tickets') {
+              const fechaValida = new Date(item.validUntil).toLocaleString('es-AR', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              });
 
-            const qrData = JSON.stringify({
-              id: item._id,
-              type: item.type,
-              code: item.qrId.code,
-              status: item.qrId.state,
-            });
+              const qrData = JSON.stringify({
+                id: item._id,
+                type: item.type,
+                code: item.qrId.code,
+                status: item.qrId.state,
+              });
 
-            return (
-              <View style={styles.ticketWrapper}>
-                <ImageBackground
-                  source={{ uri: 'https://i.imgur.com/8x5T7fJ.png' }}
-                  imageStyle={styles.ticketBgImage}
-                  style={styles.ticketBg}
-                >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                    style={styles.ticketOverlay}
+              return (
+                <View style={styles.ticketWrapper}>
+                  <ImageBackground
+                    source={{ uri: 'https://i.imgur.com/8x5T7fJ.png' }}
+                    imageStyle={styles.ticketBgImage}
+                    style={styles.ticketBg}
                   >
+                    <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.ticketOverlay}>
+                      <View style={styles.ticketContent}>
+                        <View style={styles.ticketHeader}>
+                          <Ionicons name="ticket" size={28} color="#FAD02C" />
+                          <Text style={styles.ticketId}>#{item._id.slice(-6).toUpperCase()}</Text>
+                        </View>
+                        <View style={styles.ticketInfo}>
+                          <View style={styles.infoRow}><Ionicons name="pricetag" size={16} color="#8B5CF6" /><Text style={styles.infoText}>{item.type.toUpperCase()}</Text></View>
+                          <View style={styles.infoRow}><Ionicons name="cash" size={16} color="#E53170" /><Text style={styles.infoText}>${item.price.toLocaleString()}</Text></View>
+                          <View style={styles.infoRow}><Ionicons name="time" size={16} color="#00AEEF" /><Text style={styles.infoText}>Válida hasta: {fechaValida}</Text></View>
+                        </View>
+                        <View style={styles.qrSection}>
+                          <QRView value={qrData} size={140} />
+                        </View>
+                      </View>
+                    </LinearGradient>
+                  </ImageBackground>
+                </View>
+              );
+            } else if (activeTab === 'orders') {
+              // Render Active Order Tracking
+              const order = item as any;
+              const statusLabels: Record<string, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+                pending: { label: 'Pendiente', color: '#FAD02C', icon: 'time-outline' },
+                pending_payment: { label: 'Esperando Pago', color: '#F59E0B', icon: 'card-outline' },
+                paid: { label: 'Pagada', color: '#00FF88', icon: 'checkmark-done-outline' },
+                ready: { label: '¡Lista!', color: '#00AEEF', icon: 'notifications-outline' },
+                served: { label: 'Entregada', color: '#8B5CF6', icon: 'restaurant-outline' },
+                cancelled: { label: 'Cancelada', color: '#EF4444', icon: 'close-circle-outline' },
+              };
+              const cfg = statusLabels[order.status] || statusLabels.pending;
+
+              return (
+                <View style={styles.ticketWrapper}>
+                  <LinearGradient colors={['#1A1A2E', '#16213E']} style={styles.ticketOverlay}>
                     <View style={styles.ticketContent}>
                       <View style={styles.ticketHeader}>
-                        <Ionicons name="ticket" size={28} color="#FAD02C" />
-                        <Text style={styles.ticketId}>#{item._id.slice(-6).toUpperCase()}</Text>
+                        <Ionicons name={cfg.icon} size={28} color={cfg.color} />
+                        <Text style={[styles.ticketId, { color: cfg.color }]}>ESTADO: {cfg.label.toUpperCase()}</Text>
                       </View>
 
                       <View style={styles.ticketInfo}>
                         <View style={styles.infoRow}>
-                          <Ionicons name="pricetag" size={16} color="#8B5CF6" />
-                          <Text style={styles.infoText}>{item.type.toUpperCase()}</Text>
+                          <Ionicons name="restaurant" size={16} color="#FAD02C" />
+                          <Text style={styles.infoText}>Mesa: {order.tableNumber ?? '-'}</Text>
                         </View>
                         <View style={styles.infoRow}>
-                          <Ionicons name="cash" size={16} color="#E53170" />
-                          <Text style={styles.infoText}>${item.price.toLocaleString()}</Text>
+                          <Ionicons name="cart" size={16} color="#8B5CF6" />
+                          <Text style={styles.infoText}>{order.items?.length || 0} productos</Text>
                         </View>
-                        <View style={styles.infoRow}>
-                          <Ionicons name="time" size={16} color="#00AEEF" />
-                          <Text style={styles.infoText}>Válida hasta: {fechaValida}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                          <Ionicons
-                            name={
-                              item.qrId.state === 'active' ? 'checkmark-circle' : 'close-circle'
-                            }
-                            size={16}
-                            color={item.qrId.state === 'active' ? '#00FFAA' : '#FF3B30'}
-                          />
-                          <Text
-                            style={[
-                              styles.statusText,
-                              { color: item.qrId.state === 'active' ? '#00FFAA' : '#FF3B30' },
-                            ]}
-                          >
-                            {item.qrId.state.toUpperCase()}
-                          </Text>
+                        <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 10 }}>
+                          {order.items?.map((it: any, idx: number) => (
+                            <Text key={idx} style={{ color: '#fff', fontSize: 14, marginBottom: 4 }}>
+                              • {it.productName || 'Producto'} x{it.qty}
+                            </Text>
+                          ))}
                         </View>
                       </View>
 
+                      {order.qrId?.code && (
+                        <View style={styles.qrSection}>
+                          <Text style={[styles.qrLabel, { marginBottom: 10 }]}>Mostrá este QR para recibir tu pedido</Text>
+                          <QRView value={JSON.stringify({ c: order.qrId.code, s: order.qrId.signature })} size={120} />
+                        </View>
+                      )}
+                    </View>
+                  </LinearGradient>
+                  {/* Borde indicador de estado */}
+                  <View style={{ height: 4, width: '100%', backgroundColor: cfg.color }} />
+                </View>
+              );
+            } else {
+              // Render Receipt
+              return (
+                <View style={styles.ticketWrapper}>
+                  <LinearGradient colors={['#1F1D2C', '#161522']} style={styles.ticketOverlay}>
+                    <View style={styles.ticketContent}>
+                      <View style={styles.ticketHeader}>
+                        <Ionicons name="receipt" size={28} color="#00FFAA" />
+                        <Text style={styles.ticketId}>TICKET #{item._id.slice(-6).toUpperCase()}</Text>
+                      </View>
+                      <View style={styles.ticketInfo}>
+                        <View style={styles.infoRow}><Ionicons name="restaurant" size={16} color="#FAD02C" /><Text style={styles.infoText}>Mesa: {item.tableNumber || '-'}</Text></View>
+                        <View style={styles.infoRow}><Ionicons name="cash" size={16} color="#00FF88" /><Text style={styles.infoText}>Total: ${item.total?.toLocaleString()}</Text></View>
+                        <View style={{ marginTop: 8 }}>
+                          {item.items?.map((it: any, idx: number) => (
+                            <Text key={idx} style={{ color: '#aaa', fontSize: 13 }}>• {it.name} x{it.qty}</Text>
+                          ))}
+                        </View>
+                      </View>
                       <View style={styles.qrSection}>
-                        <QRView value={qrData} size={140} />
-                        <Text style={styles.qrLabel}>Escaneá para entrar</Text>
+                        <QRView value={item.qrCode} size={140} />
                       </View>
                     </View>
                   </LinearGradient>
-                </ImageBackground>
-                <View style={styles.perforatedLine} />
-              </View>
-            );
+                </View>
+              );
+            }
           }}
         />
       </View>
-    </LinearGradient>
+    </LinearGradient >
   );
 }
 const styles = {
@@ -459,5 +534,28 @@ const styles = {
     borderTopColor: '#333',
     borderStyle: 'dashed',
     marginHorizontal: 20,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  tabText: {
+    color: '#888',
+    fontWeight: '700',
+  },
+  tabTextActive: {
+    color: '#00FFAA',
   },
 } as const;
