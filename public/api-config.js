@@ -20,7 +20,7 @@ class APIConfig {
         product: 'https://ideal-motivation-production.up.railway.app',
         qr: 'https://spectacular-smile-production.up.railway.app',
         productFront: 'https://gracious-balance-production.up.railway.app',
-        qrFront: 'https://qrjoy-production-58c3.up.railway.app'
+        qrFront: 'https://proud-contentment-production.up.railway.app'
       };
     }
   }
