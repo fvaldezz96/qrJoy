@@ -23,10 +23,9 @@ class ApiClient {
       headers,
     });
 
-    // Instancia fallback para API local (solo en desarrollo/docker o si estamos forzando localhost)
-    const isLocal = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1') || API_BASE_URL.includes('10.0.2.2');
-
-    if ((!ENV_CONFIG.isProduction || isLocal) && API_BASE_URL !== SYSTEM_A_API_URL) {
+    // Instancia fallback para API de Sistema A (Product API)
+    // Siempre se inicializa si la URL es diferente a la base, para permitir login unificado
+    if (SYSTEM_A_API_URL && SYSTEM_A_API_URL !== API_BASE_URL) {
       const fallbackHeaders: any = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -40,6 +39,7 @@ class ApiClient {
         timeout: 10000,
         headers: fallbackHeaders,
       });
+      console.log(`📡 Fallback API Instance initialized for: ${SYSTEM_A_API_URL}`);
     }
 
     this.setupInterceptors();
